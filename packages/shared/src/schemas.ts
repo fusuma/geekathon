@@ -81,3 +81,57 @@ export const ProductDataSchema = z.object({
   language: LanguageSchema.optional(),
   productId: z.string().optional(),
 });
+
+// Crisis Response Schemas
+export const CrisisTypeSchema = z.enum(['contamination', 'allergen', 'packaging', 'regulatory', 'supply-chain']);
+export const CrisisSeveritySchema = z.enum(['low', 'medium', 'high', 'critical']);
+
+export const CrisisScenarioSchema = z.object({
+  crisisType: CrisisTypeSchema,
+  severity: CrisisSeveritySchema,
+  affectedProducts: z.array(z.string()),
+  affectedMarkets: z.array(MarketSchema),
+  description: z.string(),
+  timeline: z.string(),
+  immediateActions: z.array(z.string()).optional(),
+});
+
+export const CommunicationMaterialSchema = z.object({
+  type: z.enum(['press-release', 'regulatory-notice', 'customer-email', 'social-media', 'internal-memo']),
+  market: MarketSchema,
+  language: LanguageSchema,
+  content: z.string(),
+  urgency: CrisisSeveritySchema,
+  reviewRequired: z.boolean(),
+});
+
+export const ActionItemSchema = z.object({
+  action: z.string(),
+  priority: CrisisSeveritySchema,
+  timeframe: z.string(),
+  responsible: z.string().optional(),
+  completed: z.boolean(),
+});
+
+export const CrisisResponseSchema = z.object({
+  crisisId: z.string(),
+  scenario: CrisisScenarioSchema,
+  revisedLabels: z.record(MarketSchema, LabelSchema),
+  communicationMaterials: z.array(CommunicationMaterialSchema),
+  actionPlan: z.array(ActionItemSchema),
+  generatedAt: z.string(),
+  estimatedImpact: z.string(),
+});
+
+export const CrisisLogSchema = z.object({
+  crisisId: z.string(),
+  productId: z.string().optional(),
+  crisisType: CrisisTypeSchema,
+  severity: CrisisSeveritySchema,
+  scenario: CrisisScenarioSchema,
+  response: CrisisResponseSchema,
+  timestamp: z.string(),
+  impactAssessment: z.string().optional(),
+  resolvedAt: z.string().optional(),
+  createdBy: z.string(),
+});

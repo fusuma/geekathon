@@ -4,16 +4,19 @@ import {
   PutCommand,
   GetCommand,
   QueryCommand,
+  UpdateCommand,
   PutCommandInput,
   GetCommandInput,
-  QueryCommandInput
+  QueryCommandInput,
+  UpdateCommandInput
 } from '@aws-sdk/lib-dynamodb';
-import { Label, Market } from '@repo/shared';
+import { Label, Market, CrisisLog, CrisisType, CrisisSeverity } from '@repo/shared';
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
 const TABLE_NAME = process.env.LABELS_TABLE;
+const CRISIS_LOGS_TABLE = process.env.CRISIS_LOGS_TABLE || 'SmartLabel-CrisisLogs';
 
 if (!TABLE_NAME) {
   throw new Error('LABELS_TABLE environment variable is not set');
@@ -205,4 +208,319 @@ export function generateLabelId(): string {
   const timestamp = Date.now().toString(36);
   const random = Math.random().toString(36).substring(2, 8);
   return `label_${timestamp}_${random}`;
+}
+
+// Crisis Logging Functions
+
+export interface SaveCrisisLogParams {
+  crisisLog: CrisisLog;
+}
+
+export interface GetCrisisLogParams {
+  crisisId: string;
+}
+
+export interface GetCrisisLogsByProductParams {
+  productId: string;
+  limit?: number;
+}
+
+export interface GetCrisisLogsByTypeParams {
+  crisisType: CrisisType;
+  limit?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface GetCrisisLogsByTimeRangeParams {
+  startDate: string;
+  endDate: string;
+  limit?: number;
+}
+
+/**
+ * Save a crisis log to DynamoDB for audit trail
+ */
+export async function saveCrisisLog(params: SaveCrisisLogParams): Promise<void> {
+  const { crisisLog } = params;
+
+  try {
+    const input: PutCommandInput = {
+      TableName: CRISIS_LOGS_TABLE,
+      Item: crisisLog,
+      ConditionExpression: 'attribute_not_exists(crisisId)',
+    };
+
+    const command = new PutCommand(input);
+    await docClient.send(command);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new DynamoDBError(
+      `Failed to save crisis log ${crisisLog.crisisId}: ${errorMessage}`,
+      'saveCrisisLog',
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+/**
+ * Get a crisis log by crisis ID
+ */
+export async function getCrisisLog(params: GetCrisisLogParams): Promise<CrisisLog | null> {
+  const { crisisId } = params;
+
+  try {
+    const input: GetCommandInput = {
+      TableName: CRISIS_LOGS_TABLE,
+      Key: {
+        crisisId,
+      },
+    };
+
+    const command = new GetCommand(input);
+    const result = await docClient.send(command);
+
+    return result.Item as CrisisLog || null;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new DynamoDBError(
+      `Failed to get crisis log ${crisisId}: ${errorMessage}`,
+      'getCrisisLog',
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+/**
+ * Get crisis logs by product ID for impact analysis
+ */
+export async function getCrisisLogsByProduct(params: GetCrisisLogsByProductParams): Promise<CrisisLog[]> {
+  const { productId, limit = 50 } = params;
+
+  try {
+    const input: QueryCommandInput = {
+      TableName: CRISIS_LOGS_TABLE,
+      IndexName: 'by-product',
+      KeyConditionExpression: 'productId = :productId',
+      ExpressionAttributeValues: {
+        ':productId': productId,
+      },
+      Limit: limit,
+      ScanIndexForward: false, // Sort by timestamp descending
+    };
+
+    const command = new QueryCommand(input);
+    const result = await docClient.send(command);
+
+    return (result.Items as CrisisLog[]) || [];
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new DynamoDBError(
+      `Failed to get crisis logs for product ${productId}: ${errorMessage}`,
+      'getCrisisLogsByProduct',
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+/**
+ * Get crisis logs by crisis type for pattern analysis
+ */
+export async function getCrisisLogsByType(params: GetCrisisLogsByTypeParams): Promise<CrisisLog[]> {
+  const { crisisType, limit = 50, startDate, endDate } = params;
+
+  try {
+    let keyConditionExpression = 'crisisType = :crisisType';
+    const expressionAttributeValues: Record<string, any> = {
+      ':crisisType': crisisType,
+    };
+
+    // Add date range filtering if provided
+    if (startDate && endDate) {
+      keyConditionExpression += ' AND #timestamp BETWEEN :startDate AND :endDate';
+      expressionAttributeValues[':startDate'] = startDate;
+      expressionAttributeValues[':endDate'] = endDate;
+    } else if (startDate) {
+      keyConditionExpression += ' AND #timestamp >= :startDate';
+      expressionAttributeValues[':startDate'] = startDate;
+    }
+
+    const input: QueryCommandInput = {
+      TableName: CRISIS_LOGS_TABLE,
+      IndexName: 'by-crisis-type',
+      KeyConditionExpression: keyConditionExpression,
+      ExpressionAttributeNames: {
+        '#timestamp': 'timestamp'
+      },
+      ExpressionAttributeValues: expressionAttributeValues,
+      Limit: limit,
+      ScanIndexForward: false, // Sort by timestamp descending
+    };
+
+    const command = new QueryCommand(input);
+    const result = await docClient.send(command);
+
+    return (result.Items as CrisisLog[]) || [];
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new DynamoDBError(
+      `Failed to get crisis logs for type ${crisisType}: ${errorMessage}`,
+      'getCrisisLogsByType',
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+/**
+ * Get recent crisis logs for dashboard and reporting
+ */
+export async function getRecentCrisisLogs(limit: number = 20): Promise<CrisisLog[]> {
+  try {
+    const input: QueryCommandInput = {
+      TableName: CRISIS_LOGS_TABLE,
+      IndexName: 'by-timestamp',
+      KeyConditionExpression: '#pk = :pk',
+      ExpressionAttributeNames: {
+        '#pk': 'type',
+        '#timestamp': 'timestamp'
+      },
+      ExpressionAttributeValues: {
+        ':pk': 'CRISIS_LOG', // Use a constant partition key for global index
+      },
+      Limit: limit,
+      ScanIndexForward: false, // Sort by timestamp descending
+    };
+
+    const command = new QueryCommand(input);
+    const result = await docClient.send(command);
+
+    return (result.Items as CrisisLog[]) || [];
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new DynamoDBError(
+      `Failed to get recent crisis logs: ${errorMessage}`,
+      'getRecentCrisisLogs',
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+/**
+ * Update crisis log with resolution information
+ */
+export async function updateCrisisLogResolution(
+  crisisId: string,
+  resolvedAt: string,
+  impactAssessment?: string
+): Promise<void> {
+  try {
+    const updateExpression = 'SET resolvedAt = :resolvedAt' +
+      (impactAssessment ? ', impactAssessment = :impactAssessment' : '');
+
+    const expressionAttributeValues: Record<string, any> = {
+      ':resolvedAt': resolvedAt,
+    };
+
+    if (impactAssessment) {
+      expressionAttributeValues[':impactAssessment'] = impactAssessment;
+    }
+
+    const input: UpdateCommandInput = {
+      TableName: CRISIS_LOGS_TABLE,
+      Key: { crisisId },
+      UpdateExpression: updateExpression,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ConditionExpression: 'attribute_exists(crisisId)',
+    };
+
+    const command = new UpdateCommand(input);
+    await docClient.send(command);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new DynamoDBError(
+      `Failed to update crisis log resolution ${crisisId}: ${errorMessage}`,
+      'updateCrisisLogResolution',
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+/**
+ * Generate crisis statistics for reporting
+ */
+export async function getCrisisStatistics(
+  startDate: string,
+  endDate: string
+): Promise<{
+  totalCrises: number;
+  byType: Record<CrisisType, number>;
+  bySeverity: Record<CrisisSeverity, number>;
+  avgResolutionTime: number;
+}> {
+  try {
+    const input: QueryCommandInput = {
+      TableName: CRISIS_LOGS_TABLE,
+      IndexName: 'by-timestamp',
+      KeyConditionExpression: '#pk = :pk AND #timestamp BETWEEN :startDate AND :endDate',
+      ExpressionAttributeNames: {
+        '#pk': 'type',
+        '#timestamp': 'timestamp'
+      },
+      ExpressionAttributeValues: {
+        ':pk': 'CRISIS_LOG',
+        ':startDate': startDate,
+        ':endDate': endDate,
+      },
+    };
+
+    const command = new QueryCommand(input);
+    const result = await docClient.send(command);
+    const logs = (result.Items as CrisisLog[]) || [];
+
+    const stats = {
+      totalCrises: logs.length,
+      byType: {} as Record<CrisisType, number>,
+      bySeverity: {} as Record<CrisisSeverity, number>,
+      avgResolutionTime: 0
+    };
+
+    let totalResolutionTime = 0;
+    let resolvedCount = 0;
+
+    logs.forEach(log => {
+      // Count by type
+      stats.byType[log.crisisType] = (stats.byType[log.crisisType] || 0) + 1;
+
+      // Count by severity
+      stats.bySeverity[log.severity] = (stats.bySeverity[log.severity] || 0) + 1;
+
+      // Calculate resolution time
+      if (log.resolvedAt) {
+        const created = new Date(log.timestamp).getTime();
+        const resolved = new Date(log.resolvedAt).getTime();
+        totalResolutionTime += resolved - created;
+        resolvedCount++;
+      }
+    });
+
+    if (resolvedCount > 0) {
+      stats.avgResolutionTime = Math.round(totalResolutionTime / resolvedCount / (1000 * 60 * 60)); // hours
+    }
+
+    return stats;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new DynamoDBError(
+      `Failed to get crisis statistics: ${errorMessage}`,
+      'getCrisisStatistics',
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+// Helper function to generate unique crisis ID
+export function generateCrisisId(): string {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substring(2, 8);
+  return `crisis_${timestamp}_${random}`;
 }

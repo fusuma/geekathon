@@ -81,3 +81,63 @@ export interface ProductData {
   language?: Language;
   productId?: string;
 }
+
+// Crisis Response Types
+export type CrisisType =
+  | 'contamination'
+  | 'allergen'
+  | 'packaging'
+  | 'regulatory'
+  | 'supply-chain';
+
+export type CrisisSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export interface CrisisScenario {
+  crisisType: CrisisType;
+  severity: CrisisSeverity;
+  affectedProducts: string[];
+  affectedMarkets: Market[];
+  description: string;
+  timeline: string;
+  immediateActions?: string[];
+}
+
+export interface CommunicationMaterial {
+  type: 'press-release' | 'regulatory-notice' | 'customer-email' | 'social-media' | 'internal-memo';
+  market: Market;
+  language: Language;
+  content: string;
+  urgency: CrisisSeverity;
+  reviewRequired: boolean;
+}
+
+export interface ActionItem {
+  action: string;
+  priority: CrisisSeverity;
+  timeframe: string;
+  responsible?: string;
+  completed: boolean;
+}
+
+export interface CrisisResponse {
+  crisisId: string;
+  scenario: CrisisScenario;
+  revisedLabels: Record<Market, Label>;
+  communicationMaterials: CommunicationMaterial[];
+  actionPlan: ActionItem[];
+  generatedAt: string;
+  estimatedImpact: string;
+}
+
+export interface CrisisLog {
+  crisisId: string;
+  productId?: string;
+  crisisType: CrisisType;
+  severity: CrisisSeverity;
+  scenario: CrisisScenario;
+  response: CrisisResponse;
+  timestamp: string;
+  impactAssessment?: string;
+  resolvedAt?: string;
+  createdBy: string;
+}
