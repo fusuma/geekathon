@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Label, Market } from '@repo/shared';
+import Link from 'next/link';
+import { Market } from '@repo/shared';
 import { generateLabel, generateMultiMarketLabels } from '../lib/api';
 import { ProductInputForm } from '../components/product-input-form';
 import { LabelDisplay } from '../components/label-display';
-import { AiGenerationTrace } from '../components/loading-spinner';
 import { EnhancedGenerationTrace } from '../components/animations/enhanced-generation-trace';
 import { MultiMarketSelector } from '../components/market-selector';
 import { SideBySideLayout, SynchronizedComparisonLayout } from '../components/comparison/side-by-side-layout';
 import { useAppStore, useSelectedMarkets, useComparisonMode } from '../stores/app-store';
 import { ProductInputFormData } from '../lib/schemas';
+import { Button } from '../components/ui/button';
 
 type ViewState = 'input' | 'generating' | 'results';
 
@@ -26,8 +27,7 @@ export default function HomePage() {
     setLabel,
     clearLabels,
     setIsGenerating,
-    setGenerationProgress,
-    updateGenerationStep
+    setGenerationProgress
   } = useAppStore();
 
   // Generation mutation for multi-market support
@@ -102,8 +102,13 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Market Selector */}
-            <div className="mt-4 sm:mt-0">
+            {/* Market Selector and Navigation */}
+            <div className="mt-4 sm:mt-0 flex items-center gap-4">
+              <Link href="/crisis">
+                <Button className="bg-red-600 hover:bg-red-700 text-white font-semibold">
+                  🚨 Crisis Response
+                </Button>
+              </Link>
               <MultiMarketSelector />
             </div>
           </div>
