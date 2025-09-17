@@ -11,6 +11,7 @@ Globals:
     Environment:
       Variables:
         NODE_ENV: !Ref Environment
+        LABELS_TABLE: !Ref LabelsTable
 
 Parameters:
   Environment:
@@ -22,6 +23,32 @@ Parameters:
       - prod
 
 Resources:
+  # DynamoDB Table for Labels
+  LabelsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'SmartLabel-Labels-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: labelId
+          AttributeType: S
+        - AttributeName: productId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: labelId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: by-product
+          KeySchema:
+            - AttributeName: productId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
   # Hello World Lambda for Steel Thread
   HelloFunction:
     Type: AWS::Serverless::Function
@@ -39,7 +66,46 @@ Resources:
               AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
               AllowOrigin: "'*'"
 
+  # Generate Label Lambda Function
+  GenerateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/
+      Handler: generate.handler
+      Timeout: 15
+      MemorySize: 1024
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref LabelsTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource:
+                - arn:aws:bedrock:*:*:foundation-model/anthropic.claude-3-sonnet-20240229-v1:0
+      Events:
+        GenerateApi:
+          Type: Api
+          Properties:
+            Path: /generate
+            Method: post
+            Cors:
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              AllowOrigin: "'*'"
+
 Outputs:
   HelloApi:
     Description: "API Gateway endpoint URL for Hello function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+
+  GenerateApi:
+    Description: "API Gateway endpoint URL for Generate function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/generate/"
+
+  LabelsTable:
+    Description: "DynamoDB table for storing labels"
+    Value: !Ref LabelsTable
+    Export:
+      Name: !Sub "${AWS::StackName}-LabelsTable"
