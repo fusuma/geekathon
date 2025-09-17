@@ -13,8 +13,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SmartLabel AI - Steel Thread",
-  description: "SmartLabel AI Steel Thread Implementation",
+  title: "SmartLabel AI - Product Label Generator",
+  description: "AI-powered smart food labeling for EU markets",
 };
 
 export default function RootLayout({
