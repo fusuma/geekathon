@@ -23,7 +23,7 @@ Parameters:
       - prod
 
 Resources:
-  # DynamoDB Table for Labels
+  # DynamoDB Table for Labels with Multi-Market Support
   LabelsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -34,6 +34,10 @@ Resources:
           AttributeType: S
         - AttributeName: productId
           AttributeType: S
+        - AttributeName: market
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
       KeySchema:
         - AttributeName: labelId
           KeyType: HASH
@@ -42,6 +46,22 @@ Resources:
           KeySchema:
             - AttributeName: productId
               KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: by-market
+          KeySchema:
+            - AttributeName: market
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: by-market-product
+          KeySchema:
+            - AttributeName: market
+              KeyType: HASH
+            - AttributeName: productId
+              KeyType: RANGE
           Projection:
             ProjectionType: ALL
       StreamSpecification:

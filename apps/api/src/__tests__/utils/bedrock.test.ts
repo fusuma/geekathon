@@ -60,15 +60,18 @@ describe('Bedrock Utils', () => {
 
       const result = await generateLabelWithAI({ productData: mockProductData });
 
-      expect(result).toHaveProperty('legalLabel');
-      expect(result).toHaveProperty('marketing');
-      expect(result).toHaveProperty('warnings');
-      expect(result).toHaveProperty('complianceNotes');
+      expect(result).toHaveProperty('labelData');
+      expect(result).toHaveProperty('language');
+      expect(result).toHaveProperty('marketSpecificData');
+      expect(result.labelData).toHaveProperty('legalLabel');
+      expect(result.labelData).toHaveProperty('marketing');
+      expect(result.labelData).toHaveProperty('warnings');
+      expect(result.labelData).toHaveProperty('complianceNotes');
 
-      expect(result.legalLabel.ingredients).toContain('Water');
-      expect(result.marketing.short).toBeTruthy();
-      expect(Array.isArray(result.warnings)).toBe(true);
-      expect(Array.isArray(result.complianceNotes)).toBe(true);
+      expect(result.labelData.legalLabel.ingredients).toContain('Water');
+      expect(result.labelData.marketing.short).toBeTruthy();
+      expect(Array.isArray(result.labelData.warnings)).toBe(true);
+      expect(Array.isArray(result.labelData.complianceNotes)).toBe(true);
     });
 
     it('should include market-specific information in prompt', async () => {
@@ -147,7 +150,8 @@ describe('Bedrock Utils', () => {
 
       const result = await generateLabelWithRetry({ productData: mockProductData });
 
-      expect(result).toHaveProperty('legalLabel');
+      expect(result).toHaveProperty('labelData');
+      expect(result.labelData).toHaveProperty('legalLabel');
       expect(bedrockMock.calls()).toHaveLength(1);
     });
 
@@ -162,7 +166,8 @@ describe('Bedrock Utils', () => {
       const result = await generateLabelWithRetry({ productData: mockProductData });
       const duration = Date.now() - startTime;
 
-      expect(result).toHaveProperty('legalLabel');
+      expect(result).toHaveProperty('labelData');
+      expect(result.labelData).toHaveProperty('legalLabel');
       expect(bedrockMock.calls()).toHaveLength(2);
       expect(duration).toBeGreaterThan(1000); // Should have waited for backoff
     });

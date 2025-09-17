@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { ProductDataSchema, Label } from '@repo/shared';
-import { generateLabelWithRetry, BedrockError } from '../utils/bedrock';
+import { ProductDataSchema, Label, Language } from '@repo/shared';
+import { generateLabelWithRetry, BedrockError, GenerateLabelResult } from '../utils/bedrock';
 import { saveLabel, generateLabelId, DynamoDBError } from '../utils/dynamodb';
 
 interface ErrorResponse {
@@ -110,11 +110,14 @@ export const handler = async (
     }
 
     // Generate label using AI
-    console.log('Starting AI generation');
-    let labelData;
+    console.log('Starting AI generation', { market: productData.market });
+    let generationResult: GenerateLabelResult;
     try {
-      labelData = await generateLabelWithRetry({ productData });
-      console.log('AI generation completed successfully');
+      generationResult = await generateLabelWithRetry({ productData });
+      console.log('AI generation completed successfully', {
+        hasTranslation: !!generationResult.translatedData,
+        language: generationResult.language
+      });
     } catch (error) {
       clearTimeout(timeoutId);
 
@@ -136,13 +139,16 @@ export const handler = async (
       );
     }
 
-    // Create complete label object
+    // Create complete label object with multi-market support
     const labelId = generateLabelId();
     const label: Label = {
       labelId,
       productId: productData.productId,
-      labelData,
       market: productData.market,
+      language: generationResult.language,
+      labelData: generationResult.labelData,
+      marketSpecificData: generationResult.marketSpecificData,
+      translatedData: generationResult.translatedData,
       createdAt: new Date().toISOString(),
       generatedBy: 'ai-bedrock-claude',
     };

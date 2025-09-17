@@ -6,6 +6,17 @@ export interface HelloWorldResponse {
   version: string;
 }
 
+// Market and language support types
+export type Market = 'EU' | 'ES' | 'AO' | 'MO' | 'BR';
+export type Language = 'en' | 'pt' | 'pt-BR';
+
+export interface MarketSpecificData {
+  certifications: string[];
+  localRegulations: string[];
+  culturalConsiderations: string[];
+  languageVariant?: string;
+}
+
 // Core nutrition data structures
 export interface NutritionValue {
   value: number;
@@ -51,8 +62,11 @@ export interface LabelData {
 export interface Label {
   labelId: string;
   productId?: string;
+  market: Market;
+  language: Language;
   labelData: LabelData;
-  market: 'EU' | 'ES';
+  marketSpecificData: MarketSpecificData;
+  translatedData?: LabelData; // For Portuguese markets
   createdAt: string;
   generatedBy: string;
 }
@@ -63,6 +77,7 @@ export interface ProductData {
   ingredients: string[];
   nutrition?: Partial<NutritionFactSheet>;
   allergens?: string[];
-  market: 'EU' | 'ES';
+  market: Market;
+  language?: Language;
   productId?: string;
 }

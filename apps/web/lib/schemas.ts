@@ -3,7 +3,7 @@ import { z } from "zod"
 export const productInputSchema = z.object({
   name: z.string().min(1, "Product name is required").max(200, "Product name too long"),
   ingredients: z.string().min(1, "Ingredients list is required"),
-  market: z.enum(["EU", "ES"], {
+  market: z.enum(["EU", "ES", "AO", "MO", "BR"], {
     required_error: "Please select a market",
   }),
   allergens: z.string().optional(),

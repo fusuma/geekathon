@@ -8,7 +8,7 @@ import {
   GetCommandInput,
   QueryCommandInput
 } from '@aws-sdk/lib-dynamodb';
-import { Label } from '@repo/shared';
+import { Label, Market } from '@repo/shared';
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -28,6 +28,19 @@ export interface GetLabelParams {
 }
 
 export interface GetLabelsByProductParams {
+  productId: string;
+  limit?: number;
+}
+
+export interface GetLabelsByMarketParams {
+  market: Market;
+  limit?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface GetLabelsByMarketAndProductParams {
+  market: Market;
   productId: string;
   limit?: number;
 }
@@ -110,6 +123,78 @@ export async function getLabelsByProduct(params: GetLabelsByProductParams): Prom
     throw new DynamoDBError(
       `Failed to get labels for product ${productId}: ${errorMessage}`,
       'getLabelsByProduct',
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+export async function getLabelsByMarket(params: GetLabelsByMarketParams): Promise<Label[]> {
+  const { market, limit = 50, startDate, endDate } = params;
+
+  try {
+    let keyConditionExpression = 'market = :market';
+    const expressionAttributeValues: Record<string, any> = {
+      ':market': market,
+    };
+
+    // Add date range filtering if provided
+    if (startDate && endDate) {
+      keyConditionExpression += ' AND createdAt BETWEEN :startDate AND :endDate';
+      expressionAttributeValues[':startDate'] = startDate;
+      expressionAttributeValues[':endDate'] = endDate;
+    } else if (startDate) {
+      keyConditionExpression += ' AND createdAt >= :startDate';
+      expressionAttributeValues[':startDate'] = startDate;
+    }
+
+    const input: QueryCommandInput = {
+      TableName: TABLE_NAME,
+      IndexName: 'by-market',
+      KeyConditionExpression: keyConditionExpression,
+      ExpressionAttributeValues: expressionAttributeValues,
+      Limit: limit,
+      ScanIndexForward: false, // Sort by creation time descending
+    };
+
+    const command = new QueryCommand(input);
+    const result = await docClient.send(command);
+
+    return (result.Items as Label[]) || [];
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new DynamoDBError(
+      `Failed to get labels for market ${market}: ${errorMessage}`,
+      'getLabelsByMarket',
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+export async function getLabelsByMarketAndProduct(params: GetLabelsByMarketAndProductParams): Promise<Label[]> {
+  const { market, productId, limit = 50 } = params;
+
+  try {
+    const input: QueryCommandInput = {
+      TableName: TABLE_NAME,
+      IndexName: 'by-market-product',
+      KeyConditionExpression: 'market = :market AND productId = :productId',
+      ExpressionAttributeValues: {
+        ':market': market,
+        ':productId': productId,
+      },
+      Limit: limit,
+      ScanIndexForward: false, // Sort by creation time descending
+    };
+
+    const command = new QueryCommand(input);
+    const result = await docClient.send(command);
+
+    return (result.Items as Label[]) || [];
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new DynamoDBError(
+      `Failed to get labels for market ${market} and product ${productId}: ${errorMessage}`,
+      'getLabelsByMarketAndProduct',
       error instanceof Error ? error : undefined
     );
   }

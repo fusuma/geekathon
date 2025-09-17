@@ -1,5 +1,8 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
-import { ProductData, LabelData, LabelDataSchema } from '@repo/shared';
+import { ProductData, LabelData, LabelDataSchema, Market, Language } from '@repo/shared';
+import { buildMarketSpecificPrompt } from '../templates/markets/prompt-builder';
+import { translationService } from '../services/translation';
+import { createMarketSpecificData } from '../templates/markets/market-config';
 
 const client = new BedrockRuntimeClient({});
 
@@ -9,6 +12,13 @@ export interface GenerateLabelParams {
   productData: ProductData;
 }
 
+export interface GenerateLabelResult {
+  labelData: LabelData;
+  translatedData?: LabelData;
+  marketSpecificData: any;
+  language: Language;
+}
+
 export class BedrockError extends Error {
   constructor(message: string, public readonly operation: string, public readonly cause?: Error) {
     super(message);
@@ -16,99 +26,33 @@ export class BedrockError extends Error {
   }
 }
 
-function createEUSpainLabelPrompt(productData: ProductData): string {
-  const { name, ingredients, nutrition, allergens, market } = productData;
+function determineLanguage(market: Market, requestedLanguage?: Language): Language {
+  if (requestedLanguage) return requestedLanguage;
 
-  const marketSpecific = market === 'ES' ? 'Spanish' : 'European Union';
-  const nutritionInfo = nutrition ? JSON.stringify(nutrition, null, 2) : 'Not provided';
-  const allergenInfo = allergens?.join(', ') || 'Not specified';
-
-  return `You are an expert food labeling specialist for ${marketSpecific} markets. Generate a compliant food label for the following product.
-
-PRODUCT INFORMATION:
-- Name: ${name}
-- Ingredients: ${ingredients.join(', ')}
-- Allergens: ${allergenInfo}
-- Nutrition Data: ${nutritionInfo}
-- Target Market: ${market}
-
-REQUIREMENTS:
-- Follow ${marketSpecific} food labeling regulations (EU Regulation 1169/2011 for nutritional information)
-- Include mandatory allergen warnings in local language if targeting Spain
-- Format ingredients in descending order by weight
-- Ensure nutritional information follows EU standards (per 100g/100ml)
-- Include appropriate warnings for any health risks
-- Provide compliance notes for regulatory requirements
-
-RESPONSE FORMAT (JSON only, no additional text):
-{
-  "legalLabel": {
-    "ingredients": "Comma-separated ingredients in descending order by weight, following ${marketSpecific} naming conventions",
-    "allergens": "Clear allergen statement in appropriate language (English for EU, Spanish for ES)",
-    "nutrition": {
-      "energy": {
-        "per100g": {
-          "value": 0,
-          "unit": "kcal"
-        }
-      },
-      "fat": {
-        "per100g": {
-          "value": 0,
-          "unit": "g"
-        }
-      },
-      "saturatedFat": {
-        "per100g": {
-          "value": 0,
-          "unit": "g"
-        }
-      },
-      "carbohydrates": {
-        "per100g": {
-          "value": 0,
-          "unit": "g"
-        }
-      },
-      "sugars": {
-        "per100g": {
-          "value": 0,
-          "unit": "g"
-        }
-      },
-      "protein": {
-        "per100g": {
-          "value": 0,
-          "unit": "g"
-        }
-      },
-      "salt": {
-        "per100g": {
-          "value": 0,
-          "unit": "g"
-        }
-      }
-    }
-  },
-  "marketing": {
-    "short": "Compelling, compliant marketing description (2-3 sentences max)"
-  },
-  "warnings": [
-    "Array of any mandatory warnings based on ingredients/allergens"
-  ],
-  "complianceNotes": [
-    "Array of specific regulatory compliance notes for ${marketSpecific} market"
-  ]
+  switch (market) {
+    case 'AO':
+    case 'BR':
+      return market === 'BR' ? 'pt-BR' : 'pt';
+    case 'MO':
+      return 'en'; // Default to English for Macau, with Chinese translation
+    case 'ES':
+    case 'EU':
+    default:
+      return 'en';
+  }
 }
 
-Generate the label now:`;
+function needsTranslation(market: Market): boolean {
+  return ['AO', 'BR'].includes(market);
 }
 
-export async function generateLabelWithAI(params: GenerateLabelParams): Promise<LabelData> {
+export async function generateLabelWithAI(params: GenerateLabelParams): Promise<GenerateLabelResult> {
   const { productData } = params;
 
   try {
-    const prompt = createEUSpainLabelPrompt(productData);
+    // Use market-specific prompt builder
+    const prompt = buildMarketSpecificPrompt(productData);
+    const language = determineLanguage(productData.market, productData.language);
 
     const input = {
       modelId: MODEL_ID,
@@ -156,9 +100,9 @@ export async function generateLabelWithAI(params: GenerateLabelParams): Promise<
     }
 
     // Validate the response against our schema
+    let validatedLabelData: LabelData;
     try {
-      const validatedLabelData = LabelDataSchema.parse(labelData);
-      return validatedLabelData;
+      validatedLabelData = LabelDataSchema.parse(labelData);
     } catch (validationError) {
       throw new BedrockError(
         `AI response validation failed: ${validationError}`,
@@ -166,6 +110,30 @@ export async function generateLabelWithAI(params: GenerateLabelParams): Promise<
         validationError instanceof Error ? validationError : undefined
       );
     }
+
+    // Generate translation for Portuguese markets
+    let translatedData: LabelData | undefined;
+    if (needsTranslation(productData.market)) {
+      try {
+        translatedData = await translationService.translateLabel(
+          validatedLabelData,
+          language,
+          productData.market
+        );
+      } catch (translationError) {
+        console.warn('Translation failed, proceeding with original data:', translationError);
+      }
+    }
+
+    // Create market-specific metadata
+    const marketSpecificData = createMarketSpecificData(productData.market);
+
+    return {
+      labelData: validatedLabelData,
+      translatedData,
+      marketSpecificData,
+      language
+    };
 
   } catch (error) {
     if (error instanceof BedrockError) {
@@ -185,7 +153,7 @@ export async function generateLabelWithAI(params: GenerateLabelParams): Promise<
 export async function generateLabelWithRetry(
   params: GenerateLabelParams,
   maxRetries: number = 3
-): Promise<LabelData> {
+): Promise<GenerateLabelResult> {
   let lastError: Error | undefined;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {

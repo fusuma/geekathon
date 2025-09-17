@@ -1,8 +1,20 @@
-import { HelloWorldResponse, Label, ProductData, NutritionFactSheet } from '@repo/shared';
+import { HelloWorldResponse, Label, ProductData, NutritionFactSheet, Market } from '@repo/shared';
 import { ProductInputFormData } from './schemas';
 
 // API base URL - in development, this will be our local SAM API
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
+
+// Multi-market generation request
+export interface MultiMarketRequest {
+  productData: ProductData;
+  markets: Market[];
+}
+
+// Multi-market generation response
+export interface MultiMarketResponse {
+  labels: Partial<Record<Market, Label>>;
+  timestamp: string;
+}
 
 export async function fetchHello(): Promise<HelloWorldResponse> {
   const response = await fetch(`${API_BASE_URL}/hello`);
@@ -59,6 +71,47 @@ export async function generateLabel(formData: ProductInputFormData): Promise<Lab
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || `Label generation failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// Generate labels for multiple markets
+export async function generateMultiMarketLabels(productData: ProductData, markets: Market[]): Promise<MultiMarketResponse> {
+  // For now, generate individual labels for each market
+  // TODO: In the future, we could optimize this with a batch endpoint
+  const labelPromises = markets.map(async (market) => {
+    const marketProductData = { ...productData, market };
+    const label = await generateSingleMarketLabel(marketProductData);
+    return { market, label };
+  });
+
+  const results = await Promise.all(labelPromises);
+  const labels: Partial<Record<Market, Label>> = {};
+
+  results.forEach(({ market, label }) => {
+    labels[market] = label;
+  });
+
+  return {
+    labels,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+// Helper function for single market generation
+async function generateSingleMarketLabel(productData: ProductData): Promise<Label> {
+  const response = await fetch(`${API_BASE_URL}/generate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(productData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `Label generation failed for ${productData.market}: ${response.status}`);
   }
 
   return response.json();

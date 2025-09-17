@@ -7,6 +7,17 @@ export const HelloWorldResponseSchema = z.object({
   version: z.string(),
 });
 
+// Market and language schemas
+export const MarketSchema = z.enum(['EU', 'ES', 'AO', 'MO', 'BR']);
+export const LanguageSchema = z.enum(['en', 'pt', 'pt-BR']);
+
+export const MarketSpecificDataSchema = z.object({
+  certifications: z.array(z.string()),
+  localRegulations: z.array(z.string()),
+  culturalConsiderations: z.array(z.string()),
+  languageVariant: z.string().optional(),
+});
+
 // Core nutrition data schemas
 export const NutritionValueSchema = z.object({
   value: z.number(),
@@ -51,8 +62,11 @@ export const LabelDataSchema = z.object({
 export const LabelSchema = z.object({
   labelId: z.string(),
   productId: z.string().optional(),
+  market: MarketSchema,
+  language: LanguageSchema,
   labelData: LabelDataSchema,
-  market: z.enum(['EU', 'ES']),
+  marketSpecificData: MarketSpecificDataSchema,
+  translatedData: LabelDataSchema.optional(),
   createdAt: z.string(),
   generatedBy: z.string(),
 });
@@ -63,6 +77,7 @@ export const ProductDataSchema = z.object({
   ingredients: z.array(z.string()),
   nutrition: NutritionFactSheetSchema.partial().optional(),
   allergens: z.array(z.string()).optional(),
-  market: z.enum(['EU', 'ES']),
+  market: MarketSchema,
+  language: LanguageSchema.optional(),
   productId: z.string().optional(),
 });

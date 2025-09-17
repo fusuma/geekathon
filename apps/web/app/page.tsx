@@ -2,27 +2,76 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Label } from '@repo/shared';
-import { generateLabel } from '../lib/api';
+import { Label, Market } from '@repo/shared';
+import { generateLabel, generateMultiMarketLabels } from '../lib/api';
 import { ProductInputForm } from '../components/product-input-form';
 import { LabelDisplay } from '../components/label-display';
 import { AiGenerationTrace } from '../components/loading-spinner';
+import { EnhancedGenerationTrace } from '../components/animations/enhanced-generation-trace';
+import { MultiMarketSelector } from '../components/market-selector';
+import { SideBySideLayout, SynchronizedComparisonLayout } from '../components/comparison/side-by-side-layout';
+import { useAppStore, useSelectedMarkets, useComparisonMode } from '../stores/app-store';
 import { ProductInputFormData } from '../lib/schemas';
 
 type ViewState = 'input' | 'generating' | 'results';
 
 export default function HomePage() {
   const [viewState, setViewState] = useState<ViewState>('input');
-  const [generatedLabel, setGeneratedLabel] = useState<Label | null>(null);
 
+  // Use Zustand store for multi-market state
+  const selectedMarkets = useSelectedMarkets();
+  const comparisonMode = useComparisonMode();
+  const {
+    labels,
+    setLabel,
+    clearLabels,
+    setIsGenerating,
+    setGenerationProgress,
+    updateGenerationStep
+  } = useAppStore();
+
+  // Generation mutation for multi-market support
   const generateMutation = useMutation({
-    mutationFn: generateLabel,
-    onSuccess: (label) => {
-      setGeneratedLabel(label);
+    mutationFn: async (formData: ProductInputFormData) => {
+      if (selectedMarkets.length === 1) {
+        // Single market generation
+        const label = await generateLabel({ ...formData, market: selectedMarkets[0]! });
+        return { type: 'single' as const, label, market: selectedMarkets[0]! };
+      } else {
+        // Multi-market generation
+        const productData = {
+          name: formData.name,
+          ingredients: formData.ingredients.split(',').map(i => i.trim()),
+          allergens: formData.allergens?.split(',').map(a => a.trim()),
+          market: selectedMarkets[0]!, // Will be overridden in the API call
+        };
+        const response = await generateMultiMarketLabels(productData, selectedMarkets);
+        return { type: 'multi' as const, labels: response.labels };
+      }
+    },
+    onMutate: () => {
+      setIsGenerating(true);
+      setGenerationProgress([
+        { id: 'analyzing', name: 'Analyzing Product', status: 'in_progress' },
+        { id: 'regulations', name: 'Researching Regulations', status: 'pending' },
+        { id: 'generating', name: 'Generating Content', status: 'pending' },
+        { id: 'validating', name: 'Validating Compliance', status: 'pending' },
+      ]);
+    },
+    onSuccess: (result) => {
+      if (result.type === 'single') {
+        setLabel(result.market!, result.label);
+      } else {
+        Object.entries(result.labels).forEach(([market, label]) => {
+          setLabel(market as Market, label);
+        });
+      }
+      setIsGenerating(false);
       setViewState('results');
     },
     onError: (error) => {
       console.error('Label generation failed:', error);
+      setIsGenerating(false);
       setViewState('input');
     },
   });
@@ -34,7 +83,7 @@ export default function HomePage() {
 
   const handleGenerateNew = () => {
     setViewState('input');
-    setGeneratedLabel(null);
+    clearLabels();
     generateMutation.reset();
   };
 
@@ -43,13 +92,20 @@ export default function HomePage() {
       {/* Header */}
       <div className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-100">
-              SmartLabel AI
-            </h1>
-            <p className="mt-2 text-lg text-gray-300">
-              AI-powered smart food labeling for EU markets
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-center sm:text-left">
+              <h1 className="text-3xl font-bold text-gray-100">
+                SmartLabel AI
+              </h1>
+              <p className="mt-2 text-lg text-gray-300">
+                AI-powered smart food labeling for global markets
+              </p>
+            </div>
+
+            {/* Market Selector */}
+            <div className="mt-4 sm:mt-0">
+              <MultiMarketSelector />
+            </div>
           </div>
         </div>
       </div>
@@ -86,18 +142,32 @@ export default function HomePage() {
         )}
 
         {viewState === 'generating' && (
-          <div className="bg-gray-800 rounded-lg border border-gray-700">
-            <AiGenerationTrace />
+          <div className="bg-gray-800 rounded-lg border border-gray-700 relative overflow-hidden">
+            <EnhancedGenerationTrace />
           </div>
         )}
 
-        {viewState === 'results' && generatedLabel && (
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-            <LabelDisplay
-              label={generatedLabel}
-              onGenerateNew={handleGenerateNew}
-            />
-          </div>
+        {viewState === 'results' && Object.keys(labels).length > 0 && (
+          comparisonMode && selectedMarkets.length > 1 ? (
+            // Enhanced comparison layout
+            <SynchronizedComparisonLayout onGenerateNew={handleGenerateNew} />
+          ) : selectedMarkets.length > 1 ? (
+            // Basic side-by-side layout
+            <SideBySideLayout onGenerateNew={handleGenerateNew} />
+          ) : (
+            // Single label view
+            (() => {
+              const firstLabel = Object.values(labels)[0];
+              return firstLabel ? (
+                <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+                  <LabelDisplay
+                    label={firstLabel}
+                    onGenerateNew={handleGenerateNew}
+                  />
+                </div>
+              ) : null;
+            })()
+          )
         )}
       </div>
 

@@ -2,14 +2,29 @@
 
 import { Label } from "@repo/shared"
 import { Button } from "@/components/ui/button"
-import { Copy, Download } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Copy, Download, Eye, EyeOff } from "lucide-react"
+import { MARKET_CONFIG } from "@/stores/app-store"
+import { ExportDialog } from "@/components/export/export-dialog"
+import { useState } from "react"
 
 interface LabelDisplayProps {
   label: Label
   onGenerateNew: () => void
+  showMarketHeader?: boolean
 }
 
-export function LabelDisplay({ label, onGenerateNew }: LabelDisplayProps) {
+export function LabelDisplay({ label, onGenerateNew, showMarketHeader = false }: LabelDisplayProps) {
+  const marketConfig = MARKET_CONFIG[label.market];
+  const [showDetails, setShowDetails] = useState({
+    ingredients: true,
+    allergens: true,
+    nutrition: true,
+    marketing: true,
+    warnings: true,
+    compliance: true,
+    metadata: false,
+  });
   const handleCopyToClipboard = () => {
     const labelText = `
 PRODUCT: ${label.labelData.legalLabel.ingredients}
@@ -35,16 +50,45 @@ COMPLIANCE NOTES: ${label.labelData.complianceNotes.join(', ')}
 
   return (
     <div className="space-y-6">
+      {/* Market Header (for comparison view) */}
+      {showMarketHeader && (
+        <div className="flex items-center gap-3 pb-4 border-b border-gray-600">
+          <span className="text-2xl">{marketConfig.flag}</span>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-100">{marketConfig.name}</h3>
+            <p className="text-sm text-gray-400">{marketConfig.description}</p>
+          </div>
+          <Badge variant="secondary" className="ml-auto">
+            {label.language.toUpperCase()}
+          </Badge>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-100">Generated Smart Label</h2>
+        <h2 className="text-2xl font-bold text-gray-100">
+          {showMarketHeader ? 'Smart Label' : 'Generated Smart Label'}
+        </h2>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleCopyToClipboard}>
             <Copy className="h-4 w-4 mr-2" />
             Copy
           </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Print
+          <ExportDialog
+            label={label}
+            trigger={
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            }
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDetails(prev => ({ ...prev, metadata: !prev.metadata }))}
+          >
+            {showDetails.metadata ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+            {showDetails.metadata ? 'Hide' : 'Show'} Details
           </Button>
         </div>
       </div>
@@ -61,33 +105,33 @@ COMPLIANCE NOTES: ${label.labelData.complianceNotes.join(', ')}
         </div>
 
         <div>
-          <h4 className="font-medium text-gray-900 mb-2">Allergen Information</h4>
-          <p className="text-gray-700 text-sm">
+          <h4 className="font-medium text-gray-100 mb-2">Allergen Information</h4>
+          <p className="text-gray-300 text-sm">
             {label.labelData.legalLabel.allergens}
           </p>
         </div>
 
         <div>
-          <h4 className="font-medium text-gray-900 mb-2">Nutrition Information (per 100g)</h4>
+          <h4 className="font-medium text-gray-100 mb-2">Nutrition Information (per 100g)</h4>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-600">
+              <thead className="bg-gray-600">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Nutrient
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Per 100g
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-gray-700 divide-y divide-gray-600">
                 {Object.entries(label.labelData.legalLabel.nutrition).map(([key, value]) => (
                   <tr key={key}>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-100 capitalize">
                       {key.replace(/([A-Z])/g, ' $1').trim()}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-700">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-300">
                       {value?.per100g?.value}{value?.per100g?.unit}
                     </td>
                   </tr>
@@ -99,21 +143,21 @@ COMPLIANCE NOTES: ${label.labelData.complianceNotes.join(', ')}
       </div>
 
       {/* Marketing Information */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Marketing Information</h3>
-        <p className="text-gray-700 text-sm leading-relaxed">
+      <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-100 mb-3">Marketing Information</h3>
+        <p className="text-gray-300 text-sm leading-relaxed">
           {label.labelData.marketing.short}
         </p>
       </div>
 
       {/* Warnings */}
       {label.labelData.warnings.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Important Warnings</h3>
+        <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-100 mb-3">Important Warnings</h3>
           <ul className="space-y-1">
             {label.labelData.warnings.map((warning, index) => (
-              <li key={index} className="text-amber-800 text-sm flex items-start">
-                <span className="text-amber-600 mr-2">⚠️</span>
+              <li key={index} className="text-amber-300 text-sm flex items-start">
+                <span className="text-amber-400 mr-2">⚠️</span>
                 {warning}
               </li>
             ))}
@@ -123,12 +167,12 @@ COMPLIANCE NOTES: ${label.labelData.complianceNotes.join(', ')}
 
       {/* Compliance Notes */}
       {label.labelData.complianceNotes.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Compliance Notes</h3>
+        <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-100 mb-3">Compliance Notes</h3>
           <ul className="space-y-1">
             {label.labelData.complianceNotes.map((note, index) => (
-              <li key={index} className="text-green-800 text-sm flex items-start">
-                <span className="text-green-600 mr-2">✓</span>
+              <li key={index} className="text-green-300 text-sm flex items-start">
+                <span className="text-green-400 mr-2">✓</span>
                 {note}
               </li>
             ))}
@@ -137,24 +181,24 @@ COMPLIANCE NOTES: ${label.labelData.complianceNotes.join(', ')}
       )}
 
       {/* Label Metadata */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Label Information</h3>
+      <div className="bg-gray-600 border border-gray-500 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-100 mb-3">Label Information</h3>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="font-medium text-gray-900">Label ID:</span>
-            <p className="text-gray-700">{label.labelId}</p>
+            <span className="font-medium text-gray-100">Label ID:</span>
+            <p className="text-gray-300">{label.labelId}</p>
           </div>
           <div>
-            <span className="font-medium text-gray-900">Market:</span>
-            <p className="text-gray-700">{label.market}</p>
+            <span className="font-medium text-gray-100">Market:</span>
+            <p className="text-gray-300">{label.market}</p>
           </div>
           <div>
-            <span className="font-medium text-gray-900">Generated:</span>
-            <p className="text-gray-700">{new Date(label.createdAt).toLocaleDateString()}</p>
+            <span className="font-medium text-gray-100">Generated:</span>
+            <p className="text-gray-300">{new Date(label.createdAt).toLocaleDateString()}</p>
           </div>
           <div>
-            <span className="font-medium text-gray-900">Generated By:</span>
-            <p className="text-gray-700">{label.generatedBy}</p>
+            <span className="font-medium text-gray-100">Generated By:</span>
+            <p className="text-gray-300">{label.generatedBy}</p>
           </div>
         </div>
       </div>
