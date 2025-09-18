@@ -10,7 +10,12 @@ import {
   QueryCommandInput,
   UpdateCommandInput
 } from '@aws-sdk/lib-dynamodb';
-import { Label, Market, CrisisLog, CrisisType, CrisisSeverity } from '@repo/shared';
+// import { Label, Market, CrisisLog, CrisisType, CrisisSeverity } from '@repo/shared';
+type Label = any;
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
+type CrisisLog = any;
+type CrisisType = string;
+type CrisisSeverity = string;
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);

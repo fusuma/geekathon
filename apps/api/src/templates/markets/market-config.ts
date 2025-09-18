@@ -1,4 +1,7 @@
-import { Market, MarketSpecificData } from '@repo/shared';
+// import { Market, MarketSpecificData } from '@repo/shared';
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
+type MarketSpecificData = any;
+type Language = 'en' | 'pt' | 'pt-BR' | 'es' | 'zh' | 'ar';
 
 export interface MarketTemplate {
   market: Market;
@@ -13,26 +16,47 @@ export interface MarketTemplate {
     ingredientsLabel: string;
     nutritionLabel: string;
   };
+  regulator?: string;
 }
 
 export const marketTemplates: Record<Market, MarketTemplate> = {
-  EU: {
-    market: 'EU',
-    marketName: 'European Union',
+  US: {
+    market: 'US',
+    marketName: 'United States',
     language: 'English',
     regulations: [
-      'EU Regulation 1169/2011 for nutritional information',
-      'EU Regulation 178/2002 for food safety',
-      'EU allergen regulations'
+      'FDA Food Labeling Requirements',
+      'USDA Organic Standards',
+      'FDA Allergen Labeling'
     ],
-    certifications: ['EU Organic', 'IFS Food', 'BRC Food Safety'],
+    certifications: ['USDA Organic', 'Non-GMO Project', 'Kosher'],
+    culturalConsiderations: ['Diverse dietary preferences', 'Health-conscious consumers'],
+    specificRequirements: [
+      'Ingredients in descending order by weight',
+      'Nutrition Facts panel required',
+      'Clear allergen declarations',
+      'Serving size information'
+    ],
+    regulator: 'Food and Drug Administration (FDA)'
+  },
+  UK: {
+    market: 'UK',
+    marketName: 'United Kingdom',
+    language: 'English',
+    regulations: [
+      'UK Food Information Regulations 2014',
+      'UK Food Safety Act 1990',
+      'UK allergen regulations'
+    ],
+    certifications: ['UK Organic', 'IFS Food', 'BRC Food Safety'],
     culturalConsiderations: ['Multi-cultural market', 'Diverse dietary preferences'],
     specificRequirements: [
       'Ingredients in descending order by weight',
       'Nutritional information per 100g/100ml',
       'Clear allergen declarations',
       'Energy values in both kJ and kcal'
-    ]
+    ],
+    regulator: 'Food Standards Agency (FSA)'
   },
   ES: {
     market: 'ES',
@@ -146,6 +170,30 @@ export const marketTemplates: Record<Market, MarketTemplate> = {
       ingredientsLabel: 'Ingredientes',
       nutritionLabel: 'Informação nutricional'
     }
+  },
+  AE: {
+    market: 'AE',
+    marketName: 'United Arab Emirates',
+    language: 'Arabic/English',
+    regulations: [
+      'UAE Food Safety Law',
+      'GCC Food Standards',
+      'Halal certification requirements'
+    ],
+    certifications: ['Halal', 'GCC Standard', 'ISO 22000'],
+    culturalConsiderations: ['Halal dietary requirements', 'Multi-cultural market'],
+    specificRequirements: [
+      'Arabic language allergen warnings',
+      'Halal certification display',
+      'Ingredients in Arabic and English',
+      'Cultural sensitivity in marketing'
+    ],
+    translations: {
+      allergenWarning: 'يحتوي على',
+      ingredientsLabel: 'المكونات',
+      nutritionLabel: 'المعلومات الغذائية'
+    },
+    regulator: 'Emirates Authority for Standardization and Metrology (ESMA)'
   }
 };
 

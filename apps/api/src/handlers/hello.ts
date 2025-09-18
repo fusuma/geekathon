@@ -1,5 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { HelloWorldResponse } from '@repo/shared';
+// import { HelloWorldResponse } from '@repo/shared';
+type HelloWorldResponse = {
+  message: string;
+  timestamp: string;
+  version: string;
+};
 
 export const handler = async (
   event: APIGatewayProxyEvent
