@@ -80,7 +80,7 @@ const INGREDIENT_TRANSLATIONS: Record<string, Record<string, string>> = {
     'carne': 'meat',
     'pollo': 'chicken',
     'pescado': 'fish',
-    'tomate': 'tomato',
+    'tomate': 'tomate',
     'cebolla': 'onion',
     'ajo': 'garlic',
     'pimienta': 'pepper',
@@ -119,19 +119,173 @@ const INGREDIENT_TRANSLATIONS: Record<string, Record<string, string>> = {
     'apio': 'celery',
     'sulfitos': 'sulfites',
   },
+  // English to Portuguese
+  'EN-PT': {
+    'sugar': 'açúcar',
+    'salt': 'sal',
+    'oil': 'óleo',
+    'water': 'água',
+    'flour': 'farinha',
+    'milk': 'leite',
+    'egg': 'ovo',
+    'butter': 'manteiga',
+    'cheese': 'queijo',
+    'meat': 'carne',
+    'chicken': 'frango',
+    'fish': 'peixe',
+    'tomato': 'tomate',
+    'onion': 'cebola',
+    'garlic': 'alho',
+    'pepper': 'pimenta',
+    'lemon': 'limão',
+    'orange': 'laranja',
+    'apple': 'maçã',
+    'banana': 'banana',
+    'rice': 'arroz',
+    'beans': 'feijão',
+    'potato': 'batata',
+    'carrot': 'cenoura',
+    'spinach': 'espinafre',
+    'lettuce': 'alface',
+    'preservatives': 'preservantes',
+    'colorants': 'corantes',
+    'flavorings': 'aromatizantes',
+    'stabilizers': 'estabilizantes',
+    'emulsifiers': 'emulsificantes',
+    'thickeners': 'espessantes',
+    'acidulants': 'acidulantes',
+    'antioxidants': 'antioxidantes',
+    'sweeteners': 'edulcorantes',
+    'flavor enhancers': 'realçadores de sabor',
+    'glucose': 'glicose',
+    'fructose': 'frutose',
+    'lactose': 'lactose',
+    'gluten': 'glúten',
+    'soy': 'soja',
+    'peanut': 'amendoim',
+    'nuts': 'castanha',
+    'almond': 'amêndoa',
+    'hazelnut': 'avelã',
+    'walnut': 'noz',
+    'sesame': 'sésamo',
+    'mustard': 'mostarda',
+    'celery': 'aipo',
+    'sulfites': 'sulfitos',
+    // Additional common ingredients
+    'whole wheat flour': 'farinha de trigo integral',
+    'sea salt': 'sal marinho',
+    'organic yeast': 'fermento orgânico',
+    'olive oil': 'azeite de oliva',
+    'milk powder': 'leite em pó',
+    'soy lecithin': 'lecitina de soja',
+    'wheat': 'trigo',
+    'yeast': 'fermento',
+    'olive': 'oliva',
+    'powder': 'pó',
+    'lecithin': 'lecitina',
+    'allergen': 'alérgeno',
+    'organic': 'orgânico',
+    'whole': 'integral',
+    'sea': 'marinho',
+    'milk powder (allergen)': 'leite em pó (alérgeno)',
+    'soy lecithin (allergen)': 'lecitina de soja (alérgeno)',
+  },
+  // English to Spanish
+  'EN-ES': {
+    'sugar': 'azúcar',
+    'salt': 'sal',
+    'oil': 'aceite',
+    'water': 'agua',
+    'flour': 'harina',
+    'milk': 'leche',
+    'egg': 'huevo',
+    'butter': 'mantequilla',
+    'cheese': 'queso',
+    'meat': 'carne',
+    'chicken': 'pollo',
+    'fish': 'pescado',
+    'tomato': 'tomate',
+    'onion': 'cebolla',
+    'garlic': 'ajo',
+    'pepper': 'pimienta',
+    'lemon': 'limón',
+    'orange': 'naranja',
+    'apple': 'manzana',
+    'banana': 'plátano',
+    'rice': 'arroz',
+    'beans': 'frijoles',
+    'potato': 'patata',
+    'carrot': 'zanahoria',
+    'spinach': 'espinaca',
+    'lettuce': 'lechuga',
+    'preservatives': 'conservantes',
+    'colorants': 'colorantes',
+    'flavorings': 'aromatizantes',
+    'stabilizers': 'estabilizantes',
+    'emulsifiers': 'emulsionantes',
+    'thickeners': 'espesantes',
+    'acidulants': 'acidulantes',
+    'antioxidants': 'antioxidantes',
+    'sweeteners': 'edulcorantes',
+    'flavor enhancers': 'potenciadores de sabor',
+    'glucose': 'glucosa',
+    'fructose': 'fructosa',
+    'lactose': 'lactosa',
+    'gluten': 'gluten',
+    'soy': 'soja',
+    'peanut': 'cacahuete',
+    'nuts': 'nueces',
+    'almond': 'almendra',
+    'hazelnut': 'avellana',
+    'walnut': 'nuez',
+    'sesame': 'sésamo',
+    'mustard': 'mostaza',
+    'celery': 'apio',
+    'sulfites': 'sulfitos',
+  },
 };
 
 // Translation functions
 function detectLanguage(text: string): string {
   const lowerText = text.toLowerCase();
   
-  // Check for Portuguese indicators
-  if (lowerText.includes('açúcar') || lowerText.includes('óleo') || lowerText.includes('água')) {
-    return 'PT';
-  }
+  // Portuguese indicators (more comprehensive)
+  const portugueseIndicators = [
+    'açúcar', 'óleo', 'água', 'farinha', 'leite', 'ovo', 'manteiga', 'queijo',
+    'carne', 'frango', 'peixe', 'tomate', 'cebola', 'alho', 'pimenta', 'limão',
+    'laranja', 'maçã', 'banana', 'arroz', 'feijão', 'batata', 'cenoura',
+    'espinafre', 'alface', 'preservantes', 'corantes', 'aromatizantes',
+    'conservantes', 'estabilizantes', 'emulsificantes', 'espessantes',
+    'acidulantes', 'antioxidantes', 'edulcorantes', 'realçadores de sabor',
+    'glicose', 'frutose', 'lactose', 'glúten', 'soja', 'amendoim', 'castanha',
+    'amêndoa', 'avelã', 'noz', 'sésamo', 'mostarda', 'aipo', 'sulfitos'
+  ];
   
-  // Check for Spanish indicators
-  if (lowerText.includes('azúcar') || lowerText.includes('aceite') || lowerText.includes('agua')) {
+  // Spanish indicators (more comprehensive)
+  const spanishIndicators = [
+    'azúcar', 'aceite', 'agua', 'harina', 'leche', 'huevo', 'mantequilla', 'queso',
+    'carne', 'pollo', 'pescado', 'tomate', 'cebolla', 'ajo', 'pimienta', 'limón',
+    'naranja', 'manzana', 'plátano', 'arroz', 'frijoles', 'patata', 'zanahoria',
+    'espinaca', 'lechuga', 'conservantes', 'colorantes', 'aromatizantes',
+    'estabilizantes', 'emulsionantes', 'espesantes', 'acidulantes',
+    'antioxidantes', 'edulcorantes', 'potenciadores de sabor', 'glucosa',
+    'fructosa', 'lactosa', 'gluten', 'soja', 'cacahuete', 'nueces', 'almendra',
+    'avellana', 'nuez', 'sésamo', 'mostaza', 'apio', 'sulfitos'
+  ];
+  
+  // Count matches for each language
+  const portugueseMatches = portugueseIndicators.filter(indicator => 
+    lowerText.includes(indicator)
+  ).length;
+  
+  const spanishMatches = spanishIndicators.filter(indicator => 
+    lowerText.includes(indicator)
+  ).length;
+  
+  // Return the language with more matches, or English as default
+  if (portugueseMatches > spanishMatches && portugueseMatches > 0) {
+    return 'PT';
+  } else if (spanishMatches > 0) {
     return 'ES';
   }
   
@@ -256,7 +410,15 @@ function generateMockLabel(productData: any): Label {
   
   // Detect source language and translate ingredients
   const sourceLanguage = detectLanguage(ingredientsArray.join(' '));
+  console.log(`=== TRANSLATION DEBUG ===`);
+  console.log(`Original ingredients: ${ingredientsArray.join(', ')}`);
+  console.log(`Detected source language: ${sourceLanguage}`);
+  console.log(`Target market: ${market}`);
+  console.log(`Target language: ${targetLanguage}`);
+  
   const translatedIngredients = translateIngredientsFromSource(ingredientsArray, sourceLanguage, market);
+  console.log(`Translated ingredients: ${translatedIngredients}`);
+  console.log(`=== END TRANSLATION DEBUG ===`);
   
   return {
     id: labelId,

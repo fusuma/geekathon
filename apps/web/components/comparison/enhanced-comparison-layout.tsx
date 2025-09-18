@@ -168,7 +168,7 @@ export function EnhancedComparisonLayout({ onGenerateNew }: EnhancedComparisonLa
                     </h4>
                     <div className="flex flex-wrap gap-1">
                       {Array.isArray(label.labelData?.legalLabel?.ingredients) 
-                        ? label.labelData.legalLabel.ingredients.map((ingredient, i) => (
+                        ? label.labelData.legalLabel.ingredients.map((ingredient: string, i: number) => (
                             <Badge key={i} variant="secondary" className="text-xs">
                               {ingredient}
                             </Badge>
@@ -187,13 +187,13 @@ export function EnhancedComparisonLayout({ onGenerateNew }: EnhancedComparisonLa
                           Object.entries(label.labelData.legalLabel.nutrition).map(([key, value]) => (
                             <div key={key} className="flex justify-between text-sm">
                               <span className="text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                              <span className="text-gray-200">{value?.per100g?.value || 'N/A'} {value?.per100g?.unit || ''}</span>
+                               <span className="text-gray-200">{(value as any)?.per100g?.value || 'N/A'} {(value as any)?.per100g?.unit || ''}</span>
                             </div>
                           )) :
                           Object.entries(label.nutritionalInfo).map(([key, value]) => (
                             <div key={key} className="flex justify-between text-sm">
                               <span className="text-gray-400 capitalize">{key}:</span>
-                              <span className="text-gray-200">{value}</span>
+                               <span className="text-gray-200">{String(value)}</span>
                             </div>
                           ))
                         }
@@ -209,7 +209,7 @@ export function EnhancedComparisonLayout({ onGenerateNew }: EnhancedComparisonLa
                         Warnings
                       </h4>
                       <ul className="space-y-1">
-                        {(label.labelData?.warnings || label.warnings || []).map((warning, i) => (
+                         {(label.labelData?.warnings || label.warnings || []).map((warning: string, i: number) => (
                           <li key={i} className="text-sm text-yellow-300 flex items-start gap-2">
                             <span className="text-yellow-500 mt-1">•</span>
                             {warning}
@@ -227,7 +227,7 @@ export function EnhancedComparisonLayout({ onGenerateNew }: EnhancedComparisonLa
                         Compliance Notes
                       </h4>
                       <ul className="space-y-1">
-                        {(label.labelData?.complianceNotes || label.complianceNotes || []).map((note, i) => (
+                         {(label.labelData?.complianceNotes || label.complianceNotes || []).map((note: string, i: number) => (
                           <li key={i} className="text-sm text-green-300 flex items-start gap-2">
                             <span className="text-green-500 mt-1">•</span>
                             {note}
@@ -361,7 +361,7 @@ export function EnhancedComparisonLayout({ onGenerateNew }: EnhancedComparisonLa
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-400">
-                {labels.reduce((acc, label) => acc + (label.labelData?.warnings?.length || label.warnings?.length || 0), 0)}
+                 {labels.reduce((acc, label) => acc + (label.labelData?.warnings?.length || (label as any).warnings?.length || 0), 0)}
               </div>
               <div className="text-sm text-gray-400">Total Warnings</div>
             </div>
