@@ -59,8 +59,8 @@ const initialState = {
   isGenerating: false,
   generationProgress: 0,
   labels: [],
-  selectedMarkets: ['US', 'EU'], // Default to US and EU markets
-  primaryMarket: 'US', // Default to US as primary
+  selectedMarkets: ['US', 'EU'] as Market[], // Default to US and EU markets
+  primaryMarket: 'US' as Market, // Default to US as primary
   comparisonMode: false,
   error: null,
 };
@@ -86,8 +86,8 @@ export const useAppStore = create<AppState>()(
         viewState: 'input', 
         isGenerating: false, 
         generationProgress: 0,
-        selectedMarkets: ['US', 'EU'],
-        primaryMarket: 'US',
+        selectedMarkets: ['US', 'EU'] as Market[],
+        primaryMarket: 'US' as Market,
         error: null 
       }),
     }),
