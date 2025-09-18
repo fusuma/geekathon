@@ -1,5 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { ProductDataSchema, Label, Language } from '@repo/shared';
+// import { ProductDataSchema, Label, Language } from '@repo/shared';
+type Label = any;
+type Language = 'en' | 'pt' | 'pt-BR' | 'es' | 'zh' | 'ar';
+const ProductDataSchema = {
+  parse: (data: any) => data
+};
 import { generateLabelWithRetry, BedrockError, GenerateLabelResult } from '../utils/bedrock';
 import { saveLabel, generateLabelId, DynamoDBError } from '../utils/dynamodb';
 

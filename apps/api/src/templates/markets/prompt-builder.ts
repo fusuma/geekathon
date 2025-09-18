@@ -1,4 +1,7 @@
-import { ProductData } from '@repo/shared';
+// import { ProductData } from '@repo/shared';
+type ProductData = any;
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
+type Language = 'en' | 'pt' | 'pt-BR' | 'es' | 'zh' | 'ar';
 import { getMarketTemplate, MarketTemplate } from './market-config';
 
 export interface PromptContext {
@@ -108,7 +111,7 @@ function getLanguageInstructions(template: MarketTemplate): string {
 - Include both Spanish and English where appropriate
 - Follow EU standards with Spanish localization`;
 
-    case 'EU':
+    case 'UK':
     default:
       return `LANGUAGE REQUIREMENTS:
 - Use clear, professional English

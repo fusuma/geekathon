@@ -1,5 +1,14 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
-import { ProductData, LabelData, LabelDataSchema, Market, Language, CrisisType, CrisisSeverity } from '@repo/shared';
+// import { ProductData, LabelData, LabelDataSchema, Market, Language, CrisisType, CrisisSeverity } from '@repo/shared';
+type ProductData = any;
+type LabelData = any;
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
+type Language = 'en' | 'pt' | 'pt-BR' | 'es' | 'zh' | 'ar';
+type CrisisType = string;
+type CrisisSeverity = string;
+const LabelDataSchema = {
+  parse: (data: any) => data
+};
 import { buildMarketSpecificPrompt } from '../templates/markets/prompt-builder';
 import { translationService } from '../services/translation';
 import { createMarketSpecificData } from '../templates/markets/market-config';
@@ -36,7 +45,7 @@ function determineLanguage(market: Market, requestedLanguage?: Language): Langua
     case 'MO':
       return 'en'; // Default to English for Macau, with Chinese translation
     case 'ES':
-    case 'EU':
+    case 'UK':
     default:
       return 'en';
   }

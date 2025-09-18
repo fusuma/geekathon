@@ -1,4 +1,6 @@
-import { LabelData, ProductData } from '@repo/shared';
+// import { LabelData, ProductData } from '@repo/shared';
+type LabelData = any;
+type ProductData = any;
 
 export interface ComplianceValidationResult {
   isCompliant: boolean;

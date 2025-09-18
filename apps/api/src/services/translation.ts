@@ -1,8 +1,14 @@
-import { Market, Language, LabelData } from '@repo/shared';
+// import { Market, Language, LabelData } from '@repo/shared';
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
+type Language = 'en' | 'pt' | 'pt-BR' | 'es' | 'zh' | 'ar';
+type LabelData = any;
+type ProductData = any;
 
 export interface TranslationService {
   translateLabel(labelData: LabelData, targetLanguage: Language, market: Market): Promise<LabelData>;
-  validateTranslation(original: LabelData, translated: LabelData, language: Language): boolean;
+  validateTranslation(original: LabelData, translated: LabelData, language: Language): Promise<boolean>;
+  translateIngredients(ingredients: string[], targetLanguage: Language, market: Market): Promise<string[]>;
+  translateProductData(productData: ProductData, targetLanguage: Language, market: Market): Promise<ProductData>;
 }
 
 export interface PortugueseTranslationContext {
@@ -77,6 +83,7 @@ export class PortugueseTranslationService implements TranslationService {
     return labelData;
   }
 
+
   private getTranslationContext(market: Market, language: Language): PortugueseTranslationContext {
     switch (market) {
       case 'BR':
@@ -103,7 +110,7 @@ export class PortugueseTranslationService implements TranslationService {
   private async translateToPortuguese(labelData: LabelData, context: PortugueseTranslationContext): Promise<LabelData> {
     const translated: LabelData = {
       legalLabel: {
-        ingredients: this.translateIngredients(labelData.legalLabel.ingredients, context),
+        ingredients: this.translateIngredientsString(labelData.legalLabel.ingredients, context),
         allergens: this.translateAllergens(labelData.legalLabel.allergens, context),
         nutrition: labelData.legalLabel.nutrition // Nutrition values stay the same, only labels change
       },
@@ -117,7 +124,36 @@ export class PortugueseTranslationService implements TranslationService {
     return translated;
   }
 
-  private translateIngredients(ingredients: string, context: PortugueseTranslationContext): string {
+  async translateIngredients(ingredients: string[], targetLanguage: Language, market: Market): Promise<string[]> {
+    // Mock implementation - in real app, this would use translation service
+    return ingredients.map(ingredient => {
+      // Simple mock translation based on language
+      switch (targetLanguage) {
+        case 'pt':
+        case 'pt-BR':
+          return `[PT] ${ingredient}`;
+        case 'es':
+          return `[ES] ${ingredient}`;
+        case 'zh':
+          return `[ZH] ${ingredient}`;
+        case 'ar':
+          return `[AR] ${ingredient}`;
+        default:
+          return ingredient;
+      }
+    });
+  }
+
+  async translateProductData(productData: ProductData, targetLanguage: Language, market: Market): Promise<ProductData> {
+    // Mock implementation - in real app, this would translate product data
+    return {
+      ...productData,
+      language: targetLanguage,
+      market: market
+    };
+  }
+
+  private translateIngredientsString(ingredients: string, context: PortugueseTranslationContext): string {
     let translated = ingredients;
 
     // Apply common ingredient translations
@@ -235,7 +271,7 @@ export class PortugueseTranslationService implements TranslationService {
     return result;
   }
 
-  validateTranslation(original: LabelData, translated: LabelData, language: Language): boolean {
+  async validateTranslation(original: LabelData, translated: LabelData, language: Language): Promise<boolean> {
     // Basic validation checks
     const hasTranslatedIngredients = translated.legalLabel.ingredients !== original.legalLabel.ingredients;
     const hasTranslatedAllergens = translated.legalLabel.allergens !== original.legalLabel.allergens;

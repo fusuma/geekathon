@@ -21,24 +21,12 @@ import {
   Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import dynamic from 'next/dynamic';
 import { IngredientsInput } from './ingredients-input';
 import { NutritionInput } from './nutrition-input';
+import { AdvancedMarketSelector } from './advanced-market-selector';
 // import type { Market } from '@repo/shared';
 
 type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
-
-// Dynamic import to prevent hydration issues
-const AdvancedMarketSelector = dynamic(() => import('./advanced-market-selector').then(mod => ({ default: mod.AdvancedMarketSelector })), {
-  ssr: false,
-  loading: () => (
-    <div className="bg-gray-800 border-gray-700 text-white rounded-lg border p-6">
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-pulse text-gray-400">Loading markets...</div>
-      </div>
-    </div>
-  )
-});
 
 interface EnhancedProductFormProps {
   onSubmit: (data: any) => void;

@@ -25,6 +25,8 @@ async function generateLabels(productData: any) {
 }
 
 export default function HomePage() {
+  const [mounted, setMounted] = useState(false);
+  
   const {
     viewState,
     isGenerating,
@@ -39,6 +41,11 @@ export default function HomePage() {
     reset,
     resetForm
   } = useAppStore();
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
         // Generation mutation
         const generateMutation = useMutation({
@@ -149,7 +156,7 @@ export default function HomePage() {
                 🚨 Crisis Response
               </a>
               
-              {viewState === 'results' && (
+              {mounted && viewState === 'results' && (
                 <>
                   <button
                     onClick={handleBackToInput}
