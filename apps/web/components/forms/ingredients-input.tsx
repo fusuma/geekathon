@@ -1,11 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAppStore } from '@/stores/app-store';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { translateIngredientsFromSource, detectLanguage, formatIngredientsForMarket } from '@/lib/translation';
+import { Globe, Languages } from 'lucide-react';
 
 interface IngredientsInputProps {
   ingredients: string[];
@@ -15,6 +18,25 @@ interface IngredientsInputProps {
 export function IngredientsInput({ ingredients = [], onChange }: IngredientsInputProps) {
   const [newIngredient, setNewIngredient] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [detectedLanguage, setDetectedLanguage] = useState<string>('EN');
+  const [showTranslation, setShowTranslation] = useState(false);
+  
+  const { selectedMarkets, primaryMarket } = useAppStore();
+
+  // Detect language when ingredients change
+  useEffect(() => {
+    if (ingredients.length > 0) {
+      const allIngredients = ingredients.join(' ');
+      const detected = detectLanguage(allIngredients);
+      setDetectedLanguage(detected);
+    }
+  }, [ingredients]);
+
+  // Get translated ingredients for each market
+  const getTranslatedIngredients = (market: string) => {
+    if (ingredients.length === 0) return [];
+    return translateIngredientsFromSource(ingredients, detectedLanguage, market);
+  };
 
   const handleAddIngredient = () => {
     if (newIngredient.trim() && !ingredients.includes(newIngredient.trim())) {
@@ -67,7 +89,15 @@ export function IngredientsInput({ ingredients = [], onChange }: IngredientsInpu
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Ingredients List</span>
+          <div className="flex items-center gap-2">
+            <span>Ingredients List</span>
+            {ingredients.length > 0 && (
+              <Badge variant="outline" className="text-xs">
+                <Languages className="h-3 w-3 mr-1" />
+                {detectedLanguage}
+              </Badge>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -83,6 +113,15 @@ export function IngredientsInput({ ingredients = [], onChange }: IngredientsInpu
               disabled={ingredients.length === 0}
             >
               Clear All
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowTranslation(!showTranslation)}
+              disabled={ingredients.length === 0}
+            >
+              <Globe className="h-4 w-4 mr-1" />
+              {showTranslation ? 'Hide' : 'Show'} Translation
             </Button>
             <Button
               variant="outline"
@@ -134,6 +173,41 @@ export function IngredientsInput({ ingredients = [], onChange }: IngredientsInpu
                     </button>
                   </Badge>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Translation preview */}
+          {showTranslation && ingredients.length > 0 && (
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Translation Preview
+              </h4>
+              <div className="space-y-3">
+                {selectedMarkets.map(market => {
+                  const translatedIngredients = getTranslatedIngredients(market);
+                  const isDifferent = JSON.stringify(ingredients) !== JSON.stringify(translatedIngredients);
+                  
+                  return (
+                    <div key={market} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-medium text-sm">{market} Market</h5>
+                        {isDifferent && (
+                          <Badge variant="secondary" className="text-xs">
+                            Translated
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        {formatIngredientsForMarket(translatedIngredients, market)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-3 text-xs text-gray-500">
+                💡 Ingredients are automatically translated based on the selected markets and detected language.
               </div>
             </div>
           )}
