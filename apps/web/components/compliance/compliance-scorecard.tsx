@@ -86,7 +86,7 @@ function calculateComplianceScore(label: Label): ComplianceScore {
 
   // Certifications scoring (based on market)
   const marketConfig = MARKET_CONFIG[label.market as keyof typeof MARKET_CONFIG];
-  if (label.market === 'EU' || label.market === 'ES') {
+  if (label.market === 'UK' || label.market === 'ES') {
     categories.certifications = 85;
   } else if (label.market === 'BR') {
     categories.certifications = 80;

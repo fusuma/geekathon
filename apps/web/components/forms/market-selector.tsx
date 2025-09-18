@@ -9,12 +9,28 @@ import type { Market } from '@repo/shared';
 
 const MARKETS = [
   {
-    id: 'EU',
-    name: 'European Union',
-    flag: '🇪🇺',
-    description: 'EU regulations (Spain)',
-    languages: ['EN', 'ES', 'FR', 'DE'],
-    requirements: ['Nutrition table', 'Allergen warnings', 'Origin labeling']
+    id: 'US',
+    name: 'United States',
+    flag: '🇺🇸',
+    description: 'FDA regulations',
+    languages: ['EN'],
+    requirements: ['Nutrition table', 'Allergen warnings', 'FDA standards']
+  },
+  {
+    id: 'UK',
+    name: 'United Kingdom',
+    flag: '🇬🇧',
+    description: 'UK regulations',
+    languages: ['EN'],
+    requirements: ['Nutrition table', 'Allergen warnings', 'UK standards']
+  },
+  {
+    id: 'ES',
+    name: 'Spain',
+    flag: '🇪🇸',
+    description: 'Spanish regulations',
+    languages: ['ES'],
+    requirements: ['Nutrition table', 'Allergen warnings', 'Spanish standards']
   },
   {
     id: 'BR',

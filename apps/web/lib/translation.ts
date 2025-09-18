@@ -225,7 +225,8 @@ const INGREDIENT_TRANSLATIONS: Record<string, Record<string, string>> = {
 // Market language mapping
 const MARKET_LANGUAGES: Record<string, string> = {
   'US': 'EN',
-  'EU': 'ES',
+  'UK': 'EN',
+  'ES': 'ES',
   'BR': 'PT',
   'AO': 'PT',
   'MO': 'ZH',

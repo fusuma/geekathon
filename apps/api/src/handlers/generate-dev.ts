@@ -3,7 +3,8 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 // Market language mapping
 const MARKET_LANGUAGES: Record<string, string> = {
   'US': 'EN',
-  'EU': 'ES',
+  'UK': 'EN',
+  'ES': 'ES', // Spain uses Spanish
   'BR': 'PT',
   'AO': 'PT',
   'MO': 'ZH',
@@ -243,6 +244,130 @@ const INGREDIENT_TRANSLATIONS: Record<string, Record<string, string>> = {
     'celery': 'apio',
     'sulfites': 'sulfitos',
   },
+  // English to Chinese (for Macau)
+  'EN-ZH': {
+    'sugar': '糖',
+    'salt': '盐',
+    'oil': '油',
+    'water': '水',
+    'flour': '面粉',
+    'milk': '牛奶',
+    'egg': '鸡蛋',
+    'butter': '黄油',
+    'cheese': '奶酪',
+    'meat': '肉',
+    'chicken': '鸡肉',
+    'fish': '鱼',
+    'tomato': '番茄',
+    'onion': '洋葱',
+    'garlic': '大蒜',
+    'pepper': '胡椒',
+    'lemon': '柠檬',
+    'orange': '橙子',
+    'apple': '苹果',
+    'banana': '香蕉',
+    'rice': '米饭',
+    'beans': '豆类',
+    'potato': '土豆',
+    'carrot': '胡萝卜',
+    'spinach': '菠菜',
+    'lettuce': '生菜',
+    'preservatives': '防腐剂',
+    'colorants': '着色剂',
+    'flavorings': '调味料',
+    'stabilizers': '稳定剂',
+    'emulsifiers': '乳化剂',
+    'thickeners': '增稠剂',
+    'acidulants': '酸味剂',
+    'antioxidants': '抗氧化剂',
+    'sweeteners': '甜味剂',
+    'flavor enhancers': '增味剂',
+    'glucose': '葡萄糖',
+    'fructose': '果糖',
+    'lactose': '乳糖',
+    'gluten': '麸质',
+    'soy': '大豆',
+    'peanut': '花生',
+    'nuts': '坚果',
+    'almond': '杏仁',
+    'hazelnut': '榛子',
+    'walnut': '核桃',
+    'sesame': '芝麻',
+    'mustard': '芥末',
+    'celery': '芹菜',
+    'sulfites': '亚硫酸盐',
+    // Additional ingredients
+    'whole wheat flour': '全麦面粉',
+    'sea salt': '海盐',
+    'organic yeast': '有机酵母',
+    'olive oil': '橄榄油',
+    'milk powder': '奶粉',
+    'soy lecithin': '大豆卵磷脂',
+    'honey': '蜂蜜',
+    'sesame seeds': '芝麻籽',
+  },
+  // English to Arabic (for UAE)
+  'EN-AR': {
+    'sugar': 'سكر',
+    'salt': 'ملح',
+    'oil': 'زيت',
+    'water': 'ماء',
+    'flour': 'دقيق',
+    'milk': 'حليب',
+    'egg': 'بيض',
+    'butter': 'زبدة',
+    'cheese': 'جبن',
+    'meat': 'لحم',
+    'chicken': 'دجاج',
+    'fish': 'سمك',
+    'tomato': 'طماطم',
+    'onion': 'بصل',
+    'garlic': 'ثوم',
+    'pepper': 'فلفل',
+    'lemon': 'ليمون',
+    'orange': 'برتقال',
+    'apple': 'تفاح',
+    'banana': 'موز',
+    'rice': 'أرز',
+    'beans': 'فاصوليا',
+    'potato': 'بطاطس',
+    'carrot': 'جزر',
+    'spinach': 'سبانخ',
+    'lettuce': 'خس',
+    'preservatives': 'مواد حافظة',
+    'colorants': 'ملونات',
+    'flavorings': 'منكهات',
+    'stabilizers': 'مثبتات',
+    'emulsifiers': 'مستحلبات',
+    'thickeners': 'مكثفات',
+    'acidulants': 'حمضيات',
+    'antioxidants': 'مضادات أكسدة',
+    'sweeteners': 'محليات',
+    'flavor enhancers': 'معززات نكهة',
+    'glucose': 'جلوكوز',
+    'fructose': 'فركتوز',
+    'lactose': 'لاكتوز',
+    'gluten': 'جلوتين',
+    'soy': 'صويا',
+    'peanut': 'فول سوداني',
+    'nuts': 'مكسرات',
+    'almond': 'لوز',
+    'hazelnut': 'بندق',
+    'walnut': 'جوز',
+    'sesame': 'سمسم',
+    'mustard': 'خردل',
+    'celery': 'كرفس',
+    'sulfites': 'كبريتات',
+    // Additional ingredients
+    'whole wheat flour': 'دقيق قمح كامل',
+    'sea salt': 'ملح بحري',
+    'organic yeast': 'خميرة عضوية',
+    'olive oil': 'زيت زيتون',
+    'milk powder': 'حليب مجفف',
+    'soy lecithin': 'ليسيثين الصويا',
+    'honey': 'عسل',
+    'sesame seeds': 'بذور السمسم',
+  },
 };
 
 // Translation functions
@@ -370,7 +495,7 @@ interface Label {
 
 interface SuccessResponse {
   success: boolean;
-  data: Label;
+  data: Label | Label[];
 }
 
 // Helper function to create consistent API responses
@@ -494,15 +619,31 @@ export const handler = async (
       });
     }
 
-    // Generate mock label
-    const label = generateMockLabel(productData);
-
-    console.log('Generated mock label:', JSON.stringify(label, null, 2));
-
-    return createResponse(200, {
-      success: true,
-      data: label,
-    });
+    // Check if multiple markets are requested
+    const markets = productData.markets || [productData.market];
+    
+    if (markets.length === 1) {
+      // Single market - generate one label
+      const label = generateMockLabel({ ...productData, market: markets[0] });
+      console.log('Generated mock label:', JSON.stringify(label, null, 2));
+      
+      return createResponse(200, {
+        success: true,
+        data: label,
+      });
+    } else {
+      // Multiple markets - generate multiple labels
+      const labels = markets.map((market: string) => 
+        generateMockLabel({ ...productData, market })
+      );
+      
+      console.log('Generated mock labels:', JSON.stringify(labels, null, 2));
+      
+      return createResponse(200, {
+        success: true,
+        data: labels,
+      });
+    }
 
   } catch (error) {
     console.error('Unexpected error in generate handler:', error);
