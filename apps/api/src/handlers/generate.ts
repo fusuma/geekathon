@@ -1,12 +1,14 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-// import { ProductDataSchema, Label, Language } from '@repo/shared';
+// import { ProductDataSchema, Label, Language, Market } from '@repo/shared';
 type Label = any;
 type Language = 'en' | 'pt' | 'pt-BR' | 'es' | 'zh' | 'ar';
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE' | 'EU';
 const ProductDataSchema = {
   parse: (data: any) => data
 };
 import { generateLabelWithRetry, BedrockError, GenerateLabelResult } from '../utils/bedrock';
 import { saveLabel, generateLabelId, DynamoDBError } from '../utils/dynamodb';
+import { getMarketComplianceSummary, formatMarketAllergens } from '../utils/compliance';
 
 interface ErrorResponse {
   error: string;
@@ -17,6 +19,72 @@ interface ErrorResponse {
 interface SuccessResponse {
   success: boolean;
   data: Label;
+}
+
+// Supported markets with fallback capabilities
+const SUPPORTED_MARKETS: Market[] = ['US', 'UK', 'ES', 'AO', 'MO', 'BR', 'AE', 'EU'];
+const FALLBACK_MARKET: Market = 'US';
+
+// Market-specific rate limiting (requests per minute)
+const MARKET_RATE_LIMITS: Record<Market, number> = {
+  'US': 60,
+  'UK': 60,
+  'ES': 60,
+  'AO': 30, // Lower limit for developing market
+  'MO': 30, // Lower limit for SAR market
+  'BR': 60,
+  'AE': 60,
+  'EU': 60
+};
+
+// Market validation function
+function validateMarket(market: unknown): { isValid: boolean; market: Market; errors: string[] } {
+  const errors: string[] = [];
+
+  if (!market) {
+    errors.push('Market parameter is required');
+    return { isValid: false, market: FALLBACK_MARKET, errors };
+  }
+
+  if (typeof market !== 'string') {
+    errors.push('Market must be a string');
+    return { isValid: false, market: FALLBACK_MARKET, errors };
+  }
+
+  const upperMarket = market.toUpperCase() as Market;
+  if (!SUPPORTED_MARKETS.includes(upperMarket)) {
+    errors.push(`Unsupported market: ${market}. Supported markets: ${SUPPORTED_MARKETS.join(', ')}`);
+    return { isValid: false, market: FALLBACK_MARKET, errors };
+  }
+
+  return { isValid: true, market: upperMarket, errors: [] };
+}
+
+// Market-specific error messages
+function getMarketErrorMessage(market: Market, errorType: string): string {
+  const marketName = {
+    'US': 'United States',
+    'UK': 'United Kingdom',
+    'ES': 'Spain',
+    'AO': 'Angola',
+    'MO': 'Macau SAR',
+    'BR': 'Brazil',
+    'AE': 'United Arab Emirates',
+    'EU': 'European Union'
+  }[market];
+
+  switch (errorType) {
+    case 'AI_GENERATION_ERROR':
+      return `Failed to generate label for ${marketName} market. Please check product data for market-specific requirements.`;
+    case 'VALIDATION_ERROR':
+      return `Product data validation failed for ${marketName} market. Please ensure all required fields are provided.`;
+    case 'COMPLIANCE_ERROR':
+      return `Product does not meet ${marketName} regulatory compliance requirements.`;
+    case 'RATE_LIMIT_ERROR':
+      return `Rate limit exceeded for ${marketName} market. Please try again later.`;
+    default:
+      return `Error processing request for ${marketName} market.`;
+  }
 }
 
 // Helper function to create consistent API responses
@@ -102,7 +170,7 @@ export const handler = async (
     let productData;
     try {
       productData = ProductDataSchema.parse(requestData);
-      console.log('Input validated successfully', { market: productData.market });
+      console.log('Basic input validation passed', { market: productData.market });
     } catch (error) {
       clearTimeout(timeoutId);
       const errorMessage = error instanceof Error ? error.message : 'Unknown validation error';
@@ -113,6 +181,26 @@ export const handler = async (
         errorMessage
       );
     }
+
+    // Validate market parameter specifically
+    const marketValidation = validateMarket(productData.market);
+    if (!marketValidation.isValid) {
+      clearTimeout(timeoutId);
+      console.error('Market validation failed', {
+        providedMarket: productData.market,
+        errors: marketValidation.errors
+      });
+      return createErrorResponse(
+        400,
+        'INVALID_MARKET',
+        marketValidation.errors.join('; '),
+        `Valid markets: ${SUPPORTED_MARKETS.join(', ')}`
+      );
+    }
+
+    // Use validated market
+    productData.market = marketValidation.market;
+    console.log('Market validation passed', { market: productData.market });
 
     // Generate label using AI
     console.log('Starting AI generation', { market: productData.market });
@@ -127,20 +215,20 @@ export const handler = async (
       clearTimeout(timeoutId);
 
       if (error instanceof BedrockError) {
-        console.error('Bedrock error:', error);
+        console.error('Bedrock error:', error, { market: productData.market });
         return createErrorResponse(
           500,
           'AI_GENERATION_ERROR',
-          'Failed to generate label with AI service',
+          getMarketErrorMessage(productData.market, 'AI_GENERATION_ERROR'),
           error.message
         );
       }
 
-      console.error('Unexpected AI generation error:', error);
+      console.error('Unexpected AI generation error:', error, { market: productData.market });
       return createErrorResponse(
         500,
         'INTERNAL_ERROR',
-        'Unexpected error during label generation'
+        getMarketErrorMessage(productData.market, 'INTERNAL_ERROR')
       );
     }
 
@@ -187,14 +275,42 @@ export const handler = async (
     // Clear timeout and calculate performance
     clearTimeout(timeoutId);
     const duration = Date.now() - startTime;
-    console.log('Generate handler completed successfully', {
+
+    // Market performance monitoring
+    const performanceLog = {
       duration,
       labelId,
-      requestId: context.awsRequestId
-    });
+      market: productData.market,
+      requestId: context.awsRequestId,
+      hasTranslation: !!label.translatedData,
+      language: label.language,
+      meetsPerformanceTarget: duration < 15000
+    };
+
+    console.log('Generate handler completed successfully', performanceLog);
+
+    // Log performance warning if approaching limit
+    if (duration > 12000) {
+      console.warn('Performance warning: Request took longer than 12 seconds', {
+        market: productData.market,
+        duration
+      });
+    }
+
+    // Add performance metadata to response
+    const enhancedLabel = {
+      ...label,
+      metadata: {
+        generationTime: duration,
+        market: productData.market,
+        requestId: context.awsRequestId,
+        performanceTarget: '15s',
+        meetsTarget: duration < 15000
+      }
+    };
 
     // Return success response
-    return createSuccessResponse(label);
+    return createSuccessResponse(enhancedLabel);
 
   } catch (error) {
     clearTimeout(timeoutId);

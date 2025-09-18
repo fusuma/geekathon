@@ -1,5 +1,5 @@
 // import { Market, MarketSpecificData } from '@repo/shared';
-type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE' | 'EU';
 type MarketSpecificData = any;
 type Language = 'en' | 'pt' | 'pt-BR' | 'es' | 'zh' | 'ar';
 
@@ -194,6 +194,30 @@ export const marketTemplates: Record<Market, MarketTemplate> = {
       nutritionLabel: 'المعلومات الغذائية'
     },
     regulator: 'Emirates Authority for Standardization and Metrology (ESMA)'
+  },
+  EU: {
+    market: 'EU',
+    marketName: 'European Union',
+    language: 'English',
+    regulations: [
+      'EU Regulation 1169/2011 for nutritional information',
+      'EU Food Safety Authority (EFSA) guidelines',
+      'General Food Law Regulation (EC) No 178/2002'
+    ],
+    certifications: ['EU Organic', 'IFS Food', 'BRC Food Safety'],
+    culturalConsiderations: ['Multi-cultural market', 'High food safety standards'],
+    specificRequirements: [
+      'Allergens highlighted in ingredient list',
+      'Nutritional information per 100g/100ml',
+      'Country of origin declarations',
+      'Multilingual labeling where required'
+    ],
+    translations: {
+      allergenWarning: 'Contains',
+      ingredientsLabel: 'Ingredients',
+      nutritionLabel: 'Nutrition information'
+    },
+    regulator: 'European Food Safety Authority (EFSA)'
   }
 };
 

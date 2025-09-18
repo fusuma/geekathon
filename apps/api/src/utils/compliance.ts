@@ -189,5 +189,228 @@ export function getComplianceSummary(
   return { eu, spain };
 }
 
+// Angola compliance rules (Portuguese colony regulations)
+export const ANGOLA_SPECIFIC_REQUIREMENTS = {
+  LANGUAGE: 'Portuguese language mandatory for all labeling',
+
+  ALLERGEN_LABELING: {
+    requirement: 'Allergens must be highlighted in ingredient list in Portuguese',
+    language: 'Allergen warnings must be in Portuguese: "Contém:"'
+  },
+
+  CLIMATE_CONSIDERATIONS: {
+    requirement: 'Tropical climate storage requirements mandatory',
+    specifics: ['Humidity resistance', 'Temperature stability', 'Extended shelf-life considerations']
+  },
+
+  CULTURAL_CONSIDERATIONS: [
+    'Portuguese language requirements',
+    'Traditional African ingredients acceptance',
+    'Economic accessibility focus',
+    'Import regulation compliance'
+  ]
+};
+
+// Macau compliance rules (Chinese SAR + Portuguese influence)
+export const MACAU_SPECIFIC_REQUIREMENTS = {
+  LANGUAGE: 'Dual language labeling (Chinese characters and Portuguese) required',
+
+  ALLERGEN_LABELING: {
+    requirement: 'Allergens must be in both Chinese and Portuguese',
+    language: 'Format: "Contém/含有:"'
+  },
+
+  TOURISM_INDUSTRY: {
+    requirement: 'Tourism industry food service standards compliance',
+    specifics: ['High-end hospitality standards', 'Gambling industry requirements', 'Fusion cuisine acceptance']
+  },
+
+  SAR_REGULATIONS: {
+    authority: 'Macau Special Administrative Region regulations',
+    specifics: ['Chinese traditional medicine ingredient considerations', 'Dual cultural influence compliance']
+  }
+};
+
+// Brazil compliance rules (ANVISA food regulations)
+export const BRAZIL_SPECIFIC_REQUIREMENTS = {
+  LANGUAGE: 'Brazilian Portuguese language mandatory',
+
+  ALLERGEN_LABELING: {
+    requirement: 'Detailed allergen information in Portuguese mandatory',
+    language: 'Allergen warnings must be in Brazilian Portuguese: "Contém:"'
+  },
+
+  ANVISA_REQUIREMENTS: {
+    authority: 'Brazilian Health Regulatory Agency (ANVISA)',
+    nutritionalTable: 'ANVISA nutritional table format required',
+    certification: 'ANVISA certification mandatory'
+  },
+
+  CUSTOMER_SERVICE: {
+    requirement: 'SAC (Customer Service) contact information mandatory',
+    format: 'Must include phone number and business hours'
+  },
+
+  ORGANIC_CERTIFICATION: {
+    authority: 'SISORG (Brazilian Organic System)',
+    requirement: 'Organic certification prominence if applicable'
+  }
+};
+
+export function validateAngolaCompliance(
+  labelData: LabelData,
+  productData: ProductData
+): ComplianceValidationResult {
+  const violations: string[] = [];
+  const warnings: string[] = [];
+  const recommendations: string[] = [];
+
+  // Check Portuguese language requirement
+  const hasPortugueseContent =
+    labelData.legalLabel.allergens.includes('Contém') ||
+    labelData.legalLabel.ingredients.includes('ingredientes');
+
+  if (!hasPortugueseContent) {
+    violations.push('Portuguese language required for Angola market');
+  }
+
+  // Check tropical climate considerations
+  if (!labelData.complianceNotes.some((note: any) =>
+    note.toLowerCase().includes('tropical') ||
+    note.toLowerCase().includes('climate'))) {
+    warnings.push('Consider adding tropical climate storage requirements');
+  }
+
+  return {
+    isCompliant: violations.length === 0,
+    violations,
+    warnings,
+    recommendations
+  };
+}
+
+export function validateMacauCompliance(
+  labelData: LabelData,
+  productData: ProductData
+): ComplianceValidationResult {
+  const violations: string[] = [];
+  const warnings: string[] = [];
+  const recommendations: string[] = [];
+
+  // Check dual language requirement
+  const hasDualLanguage =
+    labelData.legalLabel.allergens.includes('含有') ||
+    labelData.legalLabel.allergens.includes('Contém');
+
+  if (!hasDualLanguage) {
+    violations.push('Dual language labeling (Chinese and Portuguese) required for Macau market');
+  }
+
+  // Check tourism industry compliance
+  if (!labelData.complianceNotes.some((note: any) =>
+    note.toLowerCase().includes('tourism') ||
+    note.toLowerCase().includes('hospitality'))) {
+    recommendations.push('Consider adding tourism industry compliance notes');
+  }
+
+  return {
+    isCompliant: violations.length === 0,
+    violations,
+    warnings,
+    recommendations
+  };
+}
+
+export function validateBrazilCompliance(
+  labelData: LabelData,
+  productData: ProductData
+): ComplianceValidationResult {
+  const violations: string[] = [];
+  const warnings: string[] = [];
+  const recommendations: string[] = [];
+
+  // Check Brazilian Portuguese requirement
+  const hasBrazilianPortuguese =
+    labelData.legalLabel.allergens.includes('Contém') ||
+    labelData.legalLabel.ingredients.includes('ingredientes');
+
+  if (!hasBrazilianPortuguese) {
+    violations.push('Brazilian Portuguese language required for Brazil market');
+  }
+
+  // Check ANVISA compliance
+  if (!labelData.complianceNotes.some((note: any) =>
+    note.toLowerCase().includes('anvisa'))) {
+    violations.push('ANVISA compliance requirements not addressed');
+  }
+
+  // Check SAC requirement
+  if (!labelData.complianceNotes.some((note: any) =>
+    note.toLowerCase().includes('sac') ||
+    note.toLowerCase().includes('customer service'))) {
+    warnings.push('SAC (Customer Service) contact information should be included');
+  }
+
+  return {
+    isCompliant: violations.length === 0,
+    violations,
+    warnings,
+    recommendations
+  };
+}
+
+// Enhanced compliance summary for all markets
+export function getMarketComplianceSummary(
+  labelData: LabelData,
+  productData: ProductData
+): { [key: string]: ComplianceValidationResult } {
+  const results: { [key: string]: ComplianceValidationResult } = {};
+
+  // Base EU compliance
+  results.eu = validateEUCompliance(labelData, productData);
+
+  // Market-specific compliance
+  switch (productData.market) {
+    case 'ES':
+      results.spain = validateSpainCompliance(labelData, productData);
+      break;
+    case 'AO':
+      results.angola = validateAngolaCompliance(labelData, productData);
+      break;
+    case 'MO':
+      results.macau = validateMacauCompliance(labelData, productData);
+      break;
+    case 'BR':
+      results.brazil = validateBrazilCompliance(labelData, productData);
+      break;
+  }
+
+  return results;
+}
+
+// Helper function to get market-specific allergen formatting
+export function formatMarketAllergens(market: string, allergens: string[]): string {
+  if (allergens.length === 0) return '';
+
+  switch (market) {
+    case 'ES':
+      return `Contiene: ${allergens.join(', ')}`;
+    case 'AO':
+      return `Contém: ${allergens.join(', ')}`;
+    case 'MO':
+      return `Contém/含有: ${allergens.join(', ')}`;
+    case 'BR':
+      return `Contém: ${allergens.join(', ')}`;
+    default:
+      return `Contains: ${allergens.join(', ')}`;
+  }
+}
+
 // Export regulatory constants for reference
-export { EU_LABELING_REQUIREMENTS as EU_REGS, SPAIN_SPECIFIC_REQUIREMENTS as SPAIN_REQS };
+export {
+  EU_LABELING_REQUIREMENTS as EU_REGS,
+  SPAIN_SPECIFIC_REQUIREMENTS as SPAIN_REQS,
+  ANGOLA_SPECIFIC_REQUIREMENTS as ANGOLA_REQS,
+  MACAU_SPECIFIC_REQUIREMENTS as MACAU_REQS,
+  BRAZIL_SPECIFIC_REQUIREMENTS as BRAZIL_REQS
+};
