@@ -40,22 +40,24 @@ export default function HomePage() {
     resetForm
   } = useAppStore();
 
-  // Generation mutation
-  const generateMutation = useMutation({
-    mutationFn: generateLabels,
-    onSuccess: (data) => {
-      console.log('Generation successful:', data);
-      setLabels([data.data]);
-      setViewState('results');
-      setGenerating(false);
-      setProgress(0);
-    },
-    onError: (error) => {
-      console.error('Generation failed:', error);
-      setGenerating(false);
-      setProgress(0);
-    }
-  });
+        // Generation mutation
+        const generateMutation = useMutation({
+          mutationFn: generateLabels,
+          onSuccess: (data) => {
+            console.log('Generation successful:', data);
+            // Handle both single label and multiple labels
+            const labels = Array.isArray(data.data) ? data.data : [data.data];
+            setLabels(labels);
+            setViewState('results');
+            setGenerating(false);
+            setProgress(0);
+          },
+          onError: (error) => {
+            console.error('Generation failed:', error);
+            setGenerating(false);
+            setProgress(0);
+          }
+        });
 
   // Simple progress simulation
   useEffect(() => {
@@ -87,13 +89,17 @@ export default function HomePage() {
       // Store product data
       setProductData(formData);
       
+      // Get selected markets from store
+      const selectedMarkets = useAppStore.getState().selectedMarkets;
+      
       // Transform data for backend - ensure all required fields exist
       const backendData = {
         name: formData?.name || formData?.productName || 'Unknown Product',
         ingredients: Array.isArray(formData?.ingredients) 
           ? formData.ingredients.join(', ') 
           : (formData?.ingredients || 'No ingredients specified'),
-        market: formData?.market || formData?.primaryMarket || 'EU',
+        markets: selectedMarkets, // Send multiple markets
+        market: formData?.market || formData?.primaryMarket || selectedMarkets[0] || 'EU', // Keep single market for backward compatibility
         nutrition: formData?.nutrition || {
           energy: { per100g: { value: 0, unit: 'kcal' } }
         }
