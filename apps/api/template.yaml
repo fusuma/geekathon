@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: SmartLabel AI API - Steel Thread
+Description: SmartLabel AI API - Production Ready
 
 Globals:
   Function:
@@ -12,6 +12,13 @@ Globals:
       Variables:
         NODE_ENV: !Ref Environment
         LABELS_TABLE: !Ref LabelsTable
+        CRISIS_LOGS_TABLE: !Ref CrisisLogsTable
+        BEDROCK_REGION: !Ref AWS::Region
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowOrigin: "'*'"
 
 Parameters:
   Environment:
@@ -23,6 +30,7 @@ Parameters:
       - prod
 
 Resources:
+
   # DynamoDB Table for Labels with Multi-Market Support
   LabelsTable:
     Type: AWS::DynamoDB::Table
@@ -68,33 +76,133 @@ Resources:
         StreamViewType: NEW_AND_OLD_IMAGES
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: SmartLabel-AI
 
-  # Hello World Lambda for Steel Thread
+  # DynamoDB Table for Crisis Logs
+  CrisisLogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'SmartLabel-CrisisLogs-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: crisisId
+          AttributeType: S
+        - AttributeName: productId
+          AttributeType: S
+        - AttributeName: crisisType
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+        - AttributeName: type
+          AttributeType: S
+      KeySchema:
+        - AttributeName: crisisId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: by-product
+          KeySchema:
+            - AttributeName: productId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: by-crisis-type
+          KeySchema:
+            - AttributeName: crisisType
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: by-timestamp
+          KeySchema:
+            - AttributeName: type
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: SmartLabel-AI
+
+
+  # CloudWatch Log Group for Lambda Functions
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/SmartLabel-AI-${Environment}'
+      RetentionInDays: 30
+
+  # Hello World Lambda for Health Check
   HelloFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/handlers/
-      Handler: hello.handler
+      CodeUri: dist/
+      Handler: handlers/hello.handler
+      Description: Health check endpoint for SmartLabel AI
       Events:
         HelloApi:
           Type: Api
           Properties:
             Path: /hello
             Method: get
-            Cors:
-              AllowMethods: "'GET,POST,OPTIONS'"
-              AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-              AllowOrigin: "'*'"
 
   # Generate Label Lambda Function
   GenerateFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/handlers/
-      Handler: generate.handler
+      CodeUri: dist/
+      Handler: handlers/generate.handler
       Timeout: 15
       MemorySize: 1024
+      Description: Generate compliant food labels using AI
       Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref LabelsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CrisisLogsTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource:
+                - arn:aws:bedrock:*:*:foundation-model/anthropic.claude-3-sonnet-20240229-v1:0
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*'
+      Events:
+        GenerateApi:
+          Type: Api
+          Properties:
+            Path: /generate
+            Method: post
+
+  # Crisis Response Lambda Function
+  CrisisFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/crisis.handler
+      Timeout: 15
+      MemorySize: 1024
+      Description: Handle crisis response for food safety incidents
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CrisisLogsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref LabelsTable
         - Version: '2012-10-17'
@@ -104,18 +212,27 @@ Resources:
                 - bedrock:InvokeModel
               Resource:
                 - arn:aws:bedrock:*:*:foundation-model/anthropic.claude-3-sonnet-20240229-v1:0
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*'
       Events:
-        GenerateApi:
+        CrisisApi:
           Type: Api
           Properties:
-            Path: /generate
+            Path: /crisis
             Method: post
-            Cors:
-              AllowMethods: "'POST,OPTIONS'"
-              AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-              AllowOrigin: "'*'"
+
 
 Outputs:
+  ApiGatewayUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiGatewayUrl"
+
   HelloApi:
     Description: "API Gateway endpoint URL for Hello function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
@@ -124,8 +241,18 @@ Outputs:
     Description: "API Gateway endpoint URL for Generate function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/generate/"
 
+  CrisisApi:
+    Description: "API Gateway endpoint URL for Crisis function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/crisis/"
+
   LabelsTable:
     Description: "DynamoDB table for storing labels"
     Value: !Ref LabelsTable
     Export:
       Name: !Sub "${AWS::StackName}-LabelsTable"
+
+  CrisisLogsTable:
+    Description: "DynamoDB table for storing crisis logs"
+    Value: !Ref CrisisLogsTable
+    Export:
+      Name: !Sub "${AWS::StackName}-CrisisLogsTable"

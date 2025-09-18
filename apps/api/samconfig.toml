@@ -1,0 +1,43 @@
+# SAM Configuration File
+# This file contains the default parameters for the SAM deploy command
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
+
+version = 0.1
+
+[default]
+[default.global.parameters]
+stack_name = "SmartLabelAI-dev"
+
+[default.deploy.parameters]
+s3_bucket = "smartlabel-ai-deployments-dev"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
+confirm_changeset = true
+parameter_overrides = "Environment=\"dev\""
+image_repositories = []
+
+[dev]
+[dev.deploy]
+[dev.deploy.parameters]
+stack_name = "SmartLabelAI-dev"
+s3_bucket = "smartlabel-ai-deployments-dev"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
+confirm_changeset = false
+parameter_overrides = "Environment=\"dev\""
+
+[staging]
+[staging.deploy]
+[staging.deploy.parameters]
+stack_name = "SmartLabelAI-staging"
+s3_bucket = "smartlabel-ai-deployments-staging"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
+confirm_changeset = false
+parameter_overrides = "Environment=\"staging\""
+
+[prod]
+[prod.deploy]
+[prod.deploy.parameters]
+stack_name = "SmartLabelAI-prod"
+s3_bucket = "smartlabel-ai-deployments-prod"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
+confirm_changeset = true
+parameter_overrides = "Environment=\"prod\""
