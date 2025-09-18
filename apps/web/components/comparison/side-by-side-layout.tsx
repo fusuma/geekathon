@@ -7,7 +7,7 @@ import { LabelDisplay } from '@/components/label-display';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/stores/app-store';
 import { MARKET_CONFIG } from '@/lib/market-config';
-import type { Market } from '@repo/shared';
+// import type { Market } from '@repo/shared';
 
 interface SideBySideLayoutProps {
   onGenerateNew: () => void;

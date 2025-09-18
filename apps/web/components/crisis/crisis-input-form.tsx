@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { CrisisType, CrisisSeverity, Market } from "@repo/shared";
+// import { CrisisType, CrisisSeverity, Market } from "@repo/shared"; // Removed these types
 
 // Crisis input form schema
 const crisisInputSchema = z.object({
@@ -28,7 +28,7 @@ interface CrisisInputFormProps {
   isLoading?: boolean;
 }
 
-const crisisTypes: { value: CrisisType; label: string; description: string }[] = [
+const crisisTypes: { value: string; label: string; description: string }[] = [
   { value: 'contamination', label: 'Contamination', description: 'Bacterial, chemical, or foreign object contamination' },
   { value: 'allergen', label: 'Allergen Issue', description: 'Undeclared allergens or cross-contamination' },
   { value: 'packaging', label: 'Packaging Problem', description: 'Incorrect labels or missing warnings' },
@@ -36,14 +36,14 @@ const crisisTypes: { value: CrisisType; label: string; description: string }[] =
   { value: 'supply-chain', label: 'Supply Chain Issue', description: 'Supplier quality problems or ingredient source issues' },
 ];
 
-const severityLevels: { value: CrisisSeverity; label: string; color: string }[] = [
+const severityLevels: { value: string; label: string; color: string }[] = [
   { value: 'low', label: 'Low', color: 'bg-green-600' },
   { value: 'medium', label: 'Medium', color: 'bg-yellow-600' },
   { value: 'high', label: 'High', color: 'bg-orange-600' },
   { value: 'critical', label: 'Critical', color: 'bg-red-600' },
 ];
 
-const markets: { value: Market; label: string }[] = [
+const markets: { value: string; label: string }[] = [
   { value: 'US', label: 'United States' },
   { value: 'UK', label: 'United Kingdom' },
   { value: 'ES', label: 'Spain' },
@@ -73,7 +73,7 @@ export function CrisisInputForm({ onSubmit, isLoading = false }: CrisisInputForm
   const selectedMarkets = watch('affectedMarkets') || [];
   const selectedSeverity = watch('severity');
 
-  const handleMarketToggle = (market: Market) => {
+  const handleMarketToggle = (market: 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE') => {
     const currentMarkets = selectedMarkets;
     const updatedMarkets = currentMarkets.includes(market)
       ? currentMarkets.filter(m => m !== market)
@@ -181,10 +181,10 @@ export function CrisisInputForm({ onSubmit, isLoading = false }: CrisisInputForm
               <button
                 key={market.value}
                 type="button"
-                onClick={() => handleMarketToggle(market.value)}
+                onClick={() => handleMarketToggle(market.value as 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE')}
                 disabled={isLoading}
                 className={`p-3 border rounded-lg transition-colors ${
-                  selectedMarkets.includes(market.value)
+                  selectedMarkets.includes(market.value as 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE')
                     ? 'bg-red-600 border-red-500 text-white'
                     : 'bg-red-950/20 border-red-600/30 text-red-300 hover:border-red-500/50'
                 }`}

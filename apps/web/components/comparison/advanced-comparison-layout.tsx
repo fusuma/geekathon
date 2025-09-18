@@ -121,7 +121,7 @@ export function AdvancedComparisonLayout({ onGenerateNew }: AdvancedComparisonLa
                           {Object.entries(marketLabel.labelData.legalLabel.nutrition).map(([key, value]) => (
                             <div key={key} className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
                               <div className="text-2xl font-bold text-blue-600">
-                                {value?.per100g?.value || 'N/A'}
+                                {(value as any)?.per100g?.value || 'N/A'}
                               </div>
                               <div className="text-sm text-gray-600 capitalize">
                                 {key.replace(/([A-Z])/g, ' $1').trim()}
@@ -136,7 +136,7 @@ export function AdvancedComparisonLayout({ onGenerateNew }: AdvancedComparisonLa
                         <div>
                           <h4 className="font-semibold mb-2">Warnings</h4>
                           <div className="space-y-1">
-                            {marketLabel.labelData.warnings?.map((warning, index) => (
+                            {marketLabel.labelData.warnings?.map((warning: string, index: number) => (
                               <div key={index} className="text-sm text-orange-600 bg-orange-50 dark:bg-orange-900/20 p-2 rounded">
                                 ⚠️ {warning}
                               </div>
@@ -147,7 +147,7 @@ export function AdvancedComparisonLayout({ onGenerateNew }: AdvancedComparisonLa
                         <div>
                           <h4 className="font-semibold mb-2">Compliance Notes</h4>
                           <div className="space-y-1">
-                            {marketLabel.labelData.complianceNotes?.map((note, index) => (
+                            {marketLabel.labelData.complianceNotes?.map((note: string, index: number) => (
                               <div key={index} className="text-sm text-green-600 bg-green-50 dark:bg-green-900/20 p-2 rounded">
                                 ✅ {note}
                               </div>

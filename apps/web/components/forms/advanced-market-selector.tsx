@@ -10,7 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info, CheckCircle, AlertTriangle, Globe, Shield, FileText } from 'lucide-react';
-import type { Market } from '@repo/shared';
+// import type { Market } from '@repo/shared';
+
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
 
 interface MarketRule {
   id: string;

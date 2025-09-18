@@ -16,7 +16,9 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/stores/app-store';
 import { MARKET_CONFIG } from '@/lib/market-config';
-import type { Market, Language } from '@repo/shared';
+// import type { Market, Language } from '@repo/shared';
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
+type Language = 'en' | 'pt' | 'pt-BR' | 'es' | 'zh' | 'ar';
 
 interface MarketSelectorProps {
   className?: string;

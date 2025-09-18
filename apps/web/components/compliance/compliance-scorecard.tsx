@@ -12,7 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/stores/app-store';
 import { MARKET_CONFIG } from '@/lib/market-config';
-import type { Market, Label } from '@repo/shared';
+// import type { Market, Label } from '@repo/shared';
 
 // Compliance scoring types
 export interface ComplianceScore {
@@ -29,13 +29,13 @@ export interface ComplianceScore {
 }
 
 interface ComplianceScorecardProps {
-  market: Market;
-  label?: Label | null;
+  market: string;
+  label?: any | null;
   className?: string;
 }
 
 // Mock compliance scoring algorithm
-function calculateComplianceScore(label: Label): ComplianceScore {
+function calculateComplianceScore(label: any): ComplianceScore {
   const categories = {
     nutrition: 0,
     ingredients: 0,
@@ -304,7 +304,7 @@ export function ComplianceScorecard({ market, label, className }: ComplianceScor
 }
 
 // Comparison compliance view
-export function ComplianceComparison({ markets, className }: { markets: Market[], className?: string }) {
+export function ComplianceComparison({ markets, className }: { markets: string[], className?: string }) {
   const { labels } = useAppStore();
 
   return (

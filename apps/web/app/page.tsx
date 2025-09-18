@@ -99,7 +99,7 @@ export default function HomePage() {
           ? formData.ingredients.join(', ') 
           : (formData?.ingredients || 'No ingredients specified'),
         markets: selectedMarkets, // Send multiple markets
-        market: formData?.market || formData?.primaryMarket || selectedMarkets[0] || 'EU', // Keep single market for backward compatibility
+        market: formData?.market || formData?.primaryMarket || selectedMarkets[0] || 'US', // Keep single market for backward compatibility
         nutrition: formData?.nutrition || {
           energy: { per100g: { value: 0, unit: 'kcal' } }
         }

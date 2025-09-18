@@ -3,13 +3,32 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
-import { CrisisResponse } from '@repo/shared';
+// import { CrisisResponse } from '@repo/shared'; // Type not available in shared package
 import { CrisisInputForm, CrisisInputFormData } from './crisis-input-form';
 import { CrisisResponseDisplay } from './crisis-response-display';
 import { CrisisGenerationTrace } from './crisis-generation-trace';
 import { Button } from '@/components/ui/button';
 
 type CrisisViewState = 'input' | 'generating' | 'results';
+
+// Define CrisisResponse type locally since it's not available in shared package
+interface CrisisResponse {
+  crisisId: string;
+  scenario: {
+    crisisType: string;
+    severity: string;
+    affectedProducts: string[];
+    affectedMarkets: string[];
+    description: string;
+    timeline: string;
+    immediateActions?: string[];
+  };
+  revisedLabels: Record<string, any>;
+  communicationMaterials: any[];
+  actionPlan: any[];
+  generatedAt: string;
+  estimatedImpact: string;
+}
 
 // Mock crisis API call - replace with actual API call
 const generateCrisisResponse = async (data: CrisisInputFormData): Promise<CrisisResponse> => {

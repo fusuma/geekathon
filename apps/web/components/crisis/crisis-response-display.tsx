@@ -1,12 +1,40 @@
 "use client";
 
 import { useState } from 'react';
-import { CrisisResponse, CommunicationMaterial } from '@repo/shared';
+// import { CrisisResponse, CommunicationMaterial } from '@repo/shared'; // Types not available in shared package
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { LabelDisplay } from '../label-display';
+
+// Define types locally since they're not available in shared package
+interface CrisisResponse {
+  crisisId: string;
+  scenario: {
+    crisisType: string;
+    severity: string;
+    affectedProducts: string[];
+    affectedMarkets: string[];
+    description: string;
+    timeline: string;
+    immediateActions?: string[];
+  };
+  revisedLabels: Record<string, any>;
+  communicationMaterials: CommunicationMaterial[];
+  actionPlan: any[];
+  generatedAt: string;
+  estimatedImpact: string;
+}
+
+interface CommunicationMaterial {
+  type: string;
+  market: string;
+  language: string;
+  content: string;
+  urgency: string;
+  reviewRequired: boolean;
+}
 
 interface CrisisResponseDisplayProps {
   response: CrisisResponse;

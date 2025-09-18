@@ -1,4 +1,9 @@
-import { HelloWorldResponse, Label, ProductData, NutritionFactSheet, Market } from '@repo/shared';
+// import { HelloWorldResponse, Label, ProductData, NutritionFactSheet, Market } from '@repo/shared';
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
+type HelloWorldResponse = any;
+type Label = any;
+type ProductData = any;
+type NutritionFactSheet = any;
 import { ProductInputFormData } from './schemas';
 
 // API base URL - in development, this will be our local SAM API
