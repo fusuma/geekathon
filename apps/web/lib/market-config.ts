@@ -1,4 +1,10 @@
 export const MARKET_CONFIG = {
+  US: {
+    label: 'United States',
+    language: 'EN',
+    requirements: ['FDA Food Labeling Requirements', 'USDA Standards'],
+    regulations: ['English language required', 'Nutritional values per serving', 'Allergen declaration required'],
+  },
   EU: {
     label: 'European Union (Spain)',
     language: 'ES',
