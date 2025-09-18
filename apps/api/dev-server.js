@@ -1,8 +1,12 @@
+// Load environment variables
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 
-// Import our Lambda handler
-const { handler } = require('./dist/handlers/hello');
+// Import our Lambda handlers
+const { handler: helloHandler } = require('./dist/handlers/hello');
+const { handler: generateHandler } = require('./dist/handlers/generate-dev');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -22,7 +26,7 @@ app.get('/hello', async (req, res) => {
       body: null,
     };
 
-    const result = await handler(event);
+    const result = await helloHandler(event);
 
     // Set response headers
     if (result.headers) {
@@ -38,7 +42,43 @@ app.get('/hello', async (req, res) => {
   }
 });
 
+// Generate endpoint
+app.post('/generate', async (req, res) => {
+  try {
+    console.log('=== BACKEND RECEIVED ===');
+    console.log('req.body:', req.body);
+    console.log('req.body type:', typeof req.body);
+    console.log('req.body keys:', Object.keys(req.body || {}));
+    console.log('JSON.stringify(req.body):', JSON.stringify(req.body));
+    
+    const event = {
+      httpMethod: 'POST',
+      path: '/generate',
+      headers: req.headers,
+      queryStringParameters: req.query,
+      body: JSON.stringify(req.body),
+    };
+
+    console.log('Event body:', event.body);
+
+    const result = await generateHandler(event);
+
+    // Set response headers
+    if (result.headers) {
+      Object.keys(result.headers).forEach(key => {
+        res.set(key, result.headers[key]);
+      });
+    }
+
+    res.status(result.statusCode).send(result.body);
+  } catch (error) {
+    console.error('Generate handler error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`🚀 Dev server running on http://localhost:${port}`);
   console.log(`📡 Hello endpoint: http://localhost:${port}/hello`);
+  console.log(`📡 Generate endpoint: http://localhost:${port}/generate`);
 });

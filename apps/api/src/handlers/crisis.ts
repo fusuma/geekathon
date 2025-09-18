@@ -138,7 +138,7 @@ async function generateRevisedLabels(scenario: CrisisScenario): Promise<Record<M
  * Generate crisis-specific warning messages
  */
 function generateCrisisWarnings(crisisType: CrisisType, severity: CrisisSeverity, market: Market): string[] {
-  const baseWarnings = {
+  const baseWarnings: Record<CrisisType, string[]> = {
     contamination: [
       'DO NOT CONSUME - POTENTIAL CONTAMINATION',
       'RETURN TO STORE IMMEDIATELY',
@@ -413,7 +413,8 @@ async function logCrisisResponse(crisisResponse: CrisisResponse): Promise<void> 
 
 // Helper functions
 function getCrisisUrgencyMultiplier(severity: CrisisSeverity): number {
-  return { low: 1, medium: 1.5, high: 2, critical: 3 }[severity] || 1;
+  const severityMultipliers: Record<CrisisSeverity, number> = { low: 1, medium: 1.5, high: 2, critical: 3 };
+  return severityMultipliers[severity] || 1;
 }
 
 function getMarketLanguage(market: Market): Language {
@@ -428,7 +429,7 @@ function getMarketLanguage(market: Market): Language {
 }
 
 function getMarketCrisisRegulations(market: Market): string[] {
-  const regulations = {
+  const regulations: Record<Market, string[]> = {
     EU: ['EU Regulation 178/2002', 'EFSA Guidelines'],
     ES: ['Spanish Food Safety Code', 'EU Compliance'],
     AO: ['Angola Food Safety Act', 'Portuguese Standards'],
@@ -439,7 +440,7 @@ function getMarketCrisisRegulations(market: Market): string[] {
 }
 
 function getMarketCrisisCulturalConsiderations(market: Market): string[] {
-  const considerations = {
+  const considerations: Record<Market, string[]> = {
     EU: ['Multi-cultural sensitivity', 'GDPR compliance in communications'],
     ES: ['Spanish cultural norms', 'Regional autonomy considerations'],
     AO: ['Portuguese colonial legacy awareness', 'Local economic sensitivity'],
@@ -552,7 +553,7 @@ Crisis Hotline: [INTERNAL NUMBER]`;
 }
 
 function getMarketRegulator(market: Market): string {
-  const regulators = {
+  const regulators: Record<Market, string> = {
     EU: 'European Food Safety Authority (EFSA)',
     ES: 'Spanish Agency for Food Safety and Nutrition (AESAN)',
     AO: 'Angola National Food Safety Authority',

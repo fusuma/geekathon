@@ -110,8 +110,8 @@ export class PortugueseTranslationService implements TranslationService {
       marketing: {
         short: this.translateMarketing(labelData.marketing.short, context)
       },
-      warnings: labelData.warnings.map(warning => this.translateWarning(warning, context)),
-      complianceNotes: labelData.complianceNotes.map(note => this.translateComplianceNote(note, context))
+      warnings: labelData.warnings.map((warning: any) => this.translateWarning(warning, context)),
+      complianceNotes: labelData.complianceNotes.map((note: any) => this.translateComplianceNote(note, context))
     };
 
     return translated;

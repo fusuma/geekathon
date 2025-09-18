@@ -150,7 +150,11 @@ export const marketTemplates: Record<Market, MarketTemplate> = {
 };
 
 export function getMarketTemplate(market: Market): MarketTemplate {
-  return marketTemplates[market];
+  const template = marketTemplates[market];
+  if (!template) {
+    throw new Error(`Market template not found for market: ${market}`);
+  }
+  return template;
 }
 
 export function createMarketSpecificData(market: Market): MarketSpecificData {

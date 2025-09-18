@@ -87,7 +87,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
   delay: number
 ): T {
-  const timeoutRef = useRef<NodeJS.Timeout | undefined>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const callbackRef = useRef<T>(callback);
 
   // Update callback ref when callback changes
@@ -114,7 +114,7 @@ export function useThrottledCallback<T extends (...args: any[]) => any>(
   callback: T,
   delay: number
 ): T {
-  const timeoutRef = useRef<NodeJS.Timeout | undefined>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const lastExecRef = useRef<number>(0);
   const callbackRef = useRef<T>(callback);
 
@@ -152,14 +152,14 @@ export function useIntersectionObserver(
   useEffect(() => {
     if (!ref.current || typeof window === 'undefined') return;
 
-    const observer = new IntersectionObserver(([entry]) => {
-      const isCurrentlyIntersecting = entry.isIntersecting;
-      setIsIntersecting(isCurrentlyIntersecting);
+  const observer = new IntersectionObserver(([entry]) => {
+    const isCurrentlyIntersecting = entry?.isIntersecting ?? false;
+    setIsIntersecting(isCurrentlyIntersecting);
 
-      if (isCurrentlyIntersecting && !hasIntersected) {
-        setHasIntersected(true);
-      }
-    }, {
+    if (isCurrentlyIntersecting && !hasIntersected) {
+      setHasIntersected(true);
+    }
+  }, {
       threshold: 0.1,
       rootMargin: '50px',
       ...options,

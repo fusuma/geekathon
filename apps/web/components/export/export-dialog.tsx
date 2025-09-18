@@ -11,7 +11,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { useAppStore, useSelectedMarkets, MARKET_CONFIG } from '@/stores/app-store';
+import { useAppStore } from '@/stores/app-store';
+import { MARKET_CONFIG } from '@/lib/market-config';
 import type { Market, Label } from '@repo/shared';
 
 interface ExportDialogProps {
@@ -41,7 +42,7 @@ function printLabel(label: Label) {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>SmartLabel - ${MARKET_CONFIG[label.market].name}</title>
+      <title>SmartLabel - ${MARKET_CONFIG[label.market as keyof typeof MARKET_CONFIG]?.label || label.market}</title>
       <style>
         @page { size: A4; margin: 20mm; }
         body { font-family: Arial, sans-serif; line-height: 1.4; color: #000; }
@@ -57,7 +58,7 @@ function printLabel(label: Label) {
     <body>
       <div class="header">
         <h1>Smart Food Label</h1>
-        <p><strong>Market:</strong> ${MARKET_CONFIG[label.market].name} ${MARKET_CONFIG[label.market].flag}</p>
+        <p><strong>Market:</strong> ${MARKET_CONFIG[label.market as keyof typeof MARKET_CONFIG]?.label || label.market}</p>
         <p><strong>Language:</strong> ${label.language.toUpperCase()}</p>
         <p><strong>Generated:</strong> ${new Date(label.createdAt).toLocaleString()}</p>
       </div>
@@ -131,12 +132,12 @@ function exportToPdf(label: Label) {
 }
 
 function shareViaEmail(label: Label) {
-  const subject = `Smart Label for ${MARKET_CONFIG[label.market].name} Market`;
+  const subject = `Smart Label for ${MARKET_CONFIG[label.market as keyof typeof MARKET_CONFIG]?.label || label.market} Market`;
   const body = `
-I've generated a smart food label for the ${MARKET_CONFIG[label.market].name} market using SmartLabel AI.
+I've generated a smart food label for the ${MARKET_CONFIG[label.market as keyof typeof MARKET_CONFIG]?.label || label.market} market using SmartLabel AI.
 
 Product Details:
-- Market: ${MARKET_CONFIG[label.market].name} ${MARKET_CONFIG[label.market].flag}
+- Market: ${MARKET_CONFIG[label.market as keyof typeof MARKET_CONFIG]?.label || label.market}
 - Language: ${label.language.toUpperCase()}
 - Generated: ${new Date(label.createdAt).toLocaleString()}
 
@@ -155,12 +156,14 @@ Generated with SmartLabel AI - Geekathon 2025
 
 export function ExportDialog({ trigger, label, labels, className }: ExportDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const selectedMarkets = useSelectedMarkets();
+  const selectedMarkets = useAppStore(state => state.selectedMarkets);
   const appLabels = useAppStore(state => state.labels);
 
   // Use provided labels or get from store
   const exportLabels = labels || appLabels;
-  const availableLabels = Object.entries(exportLabels).filter(([_, label]) => label !== null) as [Market, Label][];
+  const availableLabels = Array.isArray(exportLabels) 
+    ? exportLabels.map(label => [label.market, label] as [Market, Label])
+    : Object.entries(exportLabels).filter(([_, label]) => label !== null) as [Market, Label][];
 
   const handleExportSingle = (label: Label, format: string) => {
     switch (format) {
@@ -197,11 +200,16 @@ export function ExportDialog({ trigger, label, labels, className }: ExportDialog
         // Create a comparison report
         const comparisonData = {
           title: 'Multi-Market Label Comparison',
-          markets: selectedMarkets.map(market => ({
-            market,
-            config: MARKET_CONFIG[market],
-            label: exportLabels[market]
-          })),
+          markets: selectedMarkets.map(market => {
+            const label = Array.isArray(exportLabels) 
+              ? exportLabels.find(l => l.market === market)
+              : exportLabels[market];
+            return {
+              market,
+              config: MARKET_CONFIG[market as keyof typeof MARKET_CONFIG],
+              label
+            };
+          }),
           timestamp: new Date().toISOString(),
         };
         exportToJson(comparisonData, `labels-comparison-${new Date().toISOString().split('T')[0]}.json`);
@@ -230,7 +238,7 @@ export function ExportDialog({ trigger, label, labels, className }: ExportDialog
           {label && (
             <div className="space-y-3">
               <h3 className="font-medium text-sm text-gray-700">
-                Export Single Label ({MARKET_CONFIG[label.market].flag} {MARKET_CONFIG[label.market].name})
+                Export Single Label ({MARKET_CONFIG[label.market as keyof typeof MARKET_CONFIG]?.label || label.market})
               </h3>
               <div className="grid grid-cols-2 gap-2">
                 <Button
@@ -282,7 +290,7 @@ export function ExportDialog({ trigger, label, labels, className }: ExportDialog
               <div className="flex flex-wrap gap-1 mb-3">
                 {availableLabels.map(([market, _]) => (
                   <Badge key={market} variant="secondary" className="text-xs">
-                    {MARKET_CONFIG[market].flag} {MARKET_CONFIG[market].name}
+                    {MARKET_CONFIG[market as keyof typeof MARKET_CONFIG]?.label || market}
                   </Badge>
                 ))}
               </div>

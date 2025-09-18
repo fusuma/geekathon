@@ -1,211 +1,117 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Market, Language, Label } from '@repo/shared';
+import { MARKET_CONFIG } from '@/lib/market-config';
 
-// Generation step tracking
-export interface GenerationStep {
-  id: string;
+// Types
+export interface ProductData {
   name: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'error';
-  timestamp?: string;
-  duration?: number;
-}
-
-// Compliance scoring
-export interface ComplianceScore {
-  overall: number;
-  categories: {
-    nutrition: number;
-    ingredients: number;
-    allergens: number;
-    certifications: number;
-    legal: number;
+  ingredients: string[];
+  market: Market;
+  nutrition: {
+    energy: { per100g: { value: number; unit: string } };
+    fat: { per100g: { value: number; unit: string } };
+    saturatedFat: { per100g: { value: number; unit: string } };
+    carbohydrates: { per100g: { value: number; unit: string } };
+    sugars: { per100g: { value: number; unit: string } };
+    protein: { per100g: { value: number; unit: string } };
+    salt: { per100g: { value: number; unit: string } };
+    fiber: { per100g: { value: number; unit: string } };
   };
-  issues: string[];
-  recommendations: string[];
 }
 
-// App state interface
-interface AppState {
-  // Market management
-  selectedMarkets: Market[];
-  primaryMarket: Market;
-  comparisonMode: boolean;
-
-  // Generation state
-  generationProgress: GenerationStep[];
+export interface AppState {
+  // Product data
+  productData: ProductData | null;
+  
+  // UI state
+  viewState: 'input' | 'generating' | 'results';
   isGenerating: boolean;
-
-  // UI preferences
-  language: Language;
-  theme: 'light' | 'dark';
-  complianceView: 'summary' | 'detailed';
-
-  // Generated labels
-  labels: Partial<Record<Market, Label | null>>;
-  complianceScores: Partial<Record<Market, ComplianceScore>>;
-
+  generationProgress: number;
+  
+  // Results
+  labels: Label[];
+  selectedMarkets: Market[];
+  primaryMarket: Market | null;
+  comparisonMode: boolean;
+  
+  // Error handling
+  error: string | null;
+  
   // Actions
+  setProductData: (data: ProductData) => void;
+  setViewState: (state: 'input' | 'generating' | 'results') => void;
+  setGenerating: (generating: boolean) => void;
+  setProgress: (progress: number) => void;
+  setLabels: (labels: Label[]) => void;
   setSelectedMarkets: (markets: Market[]) => void;
-  setPrimaryMarket: (market: Market) => void;
-  toggleComparisonMode: () => void;
-  setLanguage: (language: Language) => void;
-  setTheme: (theme: 'light' | 'dark') => void;
-  setComplianceView: (view: 'summary' | 'detailed') => void;
-
-  // Generation actions
-  setGenerationProgress: (steps: GenerationStep[]) => void;
-  updateGenerationStep: (stepId: string, updates: Partial<GenerationStep>) => void;
-  setIsGenerating: (generating: boolean) => void;
-
-  // Label actions
-  setLabel: (market: Market, label: Label | null) => void;
-  setComplianceScore: (market: Market, score: ComplianceScore) => void;
-  clearLabels: () => void;
-
-  // Utility actions
-  resetState: () => void;
+  setPrimaryMarket: (market: Market | null) => void;
+  setComparisonMode: (mode: boolean) => void;
+  setError: (error: string | null) => void;
+  reset: () => void;
+  resetForm: () => void; // Reset only form data, keep labels
 }
-
-// Market configuration with display information
-export const MARKET_CONFIG = {
-  EU: {
-    name: 'European Union',
-    flag: '🇪🇺',
-    language: 'en' as Language,
-    description: 'EU food labeling regulations',
-  },
-  ES: {
-    name: 'Spain',
-    flag: '🇪🇸',
-    language: 'en' as Language,
-    description: 'Spanish food safety standards',
-  },
-  AO: {
-    name: 'Angola',
-    flag: '🇦🇴',
-    language: 'pt' as Language,
-    description: 'Angolan food regulations (Portuguese)',
-  },
-  MO: {
-    name: 'Macau',
-    flag: '🇲🇴',
-    language: 'en' as Language,
-    description: 'Macau SAR regulations',
-  },
-  BR: {
-    name: 'Brazil',
-    flag: '🇧🇷',
-    language: 'pt-BR' as Language,
-    description: 'Brazilian ANVISA standards',
-  },
-} as const;
 
 // Initial state
 const initialState = {
-  selectedMarkets: ['EU'] as Market[],
-  primaryMarket: 'EU' as Market,
-  comparisonMode: false,
-  generationProgress: [],
+  productData: null,
+  viewState: 'input' as const,
   isGenerating: false,
-  language: 'en' as Language,
-  theme: 'light' as const,
-  complianceView: 'summary' as const,
-  labels: {} as Partial<Record<Market, Label | null>>,
-  complianceScores: {} as Partial<Record<Market, ComplianceScore>>,
+  generationProgress: 0,
+  labels: [],
+  selectedMarkets: ['EU'], // Default to EU market
+  primaryMarket: 'EU', // Default to EU as primary
+  comparisonMode: false,
+  error: null,
 };
 
-// Create the store with persistence
+// Store
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       ...initialState,
-
-      // Market management actions
-      setSelectedMarkets: (markets) => {
-        set({ selectedMarkets: markets });
-        // Auto-enable comparison mode if multiple markets selected
-        if (markets.length > 1) {
-          set({ comparisonMode: true });
-        }
-      },
-
-      setPrimaryMarket: (market) => {
-        set({ primaryMarket: market });
-        // Ensure primary market is in selected markets
-        const { selectedMarkets } = get();
-        if (!selectedMarkets.includes(market)) {
-          set({ selectedMarkets: [market, ...selectedMarkets] });
-        }
-      },
-
-      toggleComparisonMode: () => {
-        const { comparisonMode, selectedMarkets } = get();
-        // Only allow comparison mode if multiple markets are selected
-        if (selectedMarkets.length > 1) {
-          set({ comparisonMode: !comparisonMode });
-        }
-      },
-
-      setLanguage: (language) => set({ language }),
-      setTheme: (theme) => set({ theme }),
-      setComplianceView: (view) => set({ complianceView: view }),
-
-      // Generation actions
-      setGenerationProgress: (steps) => set({ generationProgress: steps }),
-
-      updateGenerationStep: (stepId, updates) => {
-        const { generationProgress } = get();
-        const updatedSteps = generationProgress.map(step =>
-          step.id === stepId ? { ...step, ...updates } : step
-        );
-        set({ generationProgress: updatedSteps });
-      },
-
-      setIsGenerating: (generating) => set({ isGenerating: generating }),
-
-      // Label actions
-      setLabel: (market, label) => {
-        const { labels } = get();
-        set({ labels: { ...labels, [market]: label } });
-      },
-
-      setComplianceScore: (market, score) => {
-        const { complianceScores } = get();
-        set({ complianceScores: { ...complianceScores, [market]: score } });
-      },
-
-      clearLabels: () => {
-        set({
-          labels: {},
-          complianceScores: {},
-          generationProgress: [],
-          isGenerating: false
-        });
-      },
-
-      // Utility actions
-      resetState: () => set(initialState),
+      
+      setProductData: (data) => set({ productData: data }),
+      setViewState: (state) => set({ viewState: state }),
+      setGenerating: (generating) => set({ isGenerating: generating }),
+      setProgress: (progress) => set({ generationProgress: progress }),
+      setLabels: (labels) => set({ labels }),
+      setSelectedMarkets: (markets) => set({ selectedMarkets: markets }),
+      setPrimaryMarket: (market) => set({ primaryMarket: market }),
+      setComparisonMode: (mode) => set({ comparisonMode: mode }),
+      setError: (error) => set({ error }),
+      reset: () => set(initialState),
+      resetForm: () => set({ 
+        productData: null, 
+        viewState: 'input', 
+        isGenerating: false, 
+        generationProgress: 0,
+        selectedMarkets: ['EU'],
+        primaryMarket: 'EU',
+        error: null 
+      }),
     }),
     {
-      name: 'smartlabel-app-store',
+      name: 'smartlabel-store',
       partialize: (state) => ({
-        selectedMarkets: state.selectedMarkets,
-        primaryMarket: state.primaryMarket,
-        language: state.language,
-        theme: state.theme,
-        complianceView: state.complianceView,
+        productData: state.productData,
+        // Remove selectedMarkets, primaryMarket, comparisonMode from persistence
+        // to prevent hydration mismatches
       }),
     }
   )
 );
 
-// Selectors for commonly used derived state
-export const useSelectedMarkets = () => useAppStore(state => state.selectedMarkets);
-export const usePrimaryMarket = () => useAppStore(state => state.primaryMarket);
-export const useComparisonMode = () => useAppStore(state => state.comparisonMode);
-export const useLabels = () => useAppStore(state => state.labels);
-export const useGenerationState = () => useAppStore(state => ({
-  isGenerating: state.isGenerating,
-  progress: state.generationProgress,
-}));
+// Simple selectors - no custom hooks to avoid re-render issues
+export const selectProductData = (state: AppState) => state.productData;
+export const selectViewState = (state: AppState) => state.viewState;
+export const selectIsGenerating = (state: AppState) => state.isGenerating;
+export const selectProgress = (state: AppState) => state.generationProgress;
+export const selectLabels = (state: AppState) => state.labels;
+export const selectSelectedMarkets = (state: AppState) => state.selectedMarkets;
+export const selectPrimaryMarket = (state: AppState) => state.primaryMarket;
+export const selectComparisonMode = (state: AppState) => state.comparisonMode;
+export const selectError = (state: AppState) => state.error;
+
+// Re-export MARKET_CONFIG for convenience
+export { MARKET_CONFIG };

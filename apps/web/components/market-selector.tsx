@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useAppStore, MARKET_CONFIG } from '@/stores/app-store';
+import { useAppStore } from '@/stores/app-store';
+import { MARKET_CONFIG } from '@/lib/market-config';
 import type { Market, Language } from '@repo/shared';
 
 interface MarketSelectorProps {
@@ -27,11 +28,9 @@ export function MarketSelector({ className, variant = 'single' }: MarketSelector
     selectedMarkets,
     primaryMarket,
     comparisonMode,
-    language,
     setSelectedMarkets,
     setPrimaryMarket,
-    toggleComparisonMode,
-    setLanguage,
+    setComparisonMode,
   } = useAppStore();
 
   const [isMarketOpen, setIsMarketOpen] = useState(false);
@@ -63,12 +62,12 @@ export function MarketSelector({ className, variant = 'single' }: MarketSelector
   };
 
   const handleLanguageChange = (newLanguage: Language) => {
-    setLanguage(newLanguage);
+    // Language is now derived from the selected market
     setIsLanguageOpen(false);
   };
 
-  const getPrimaryMarketInfo = () => MARKET_CONFIG[primaryMarket];
-  const getSelectedMarketsInfo = () => selectedMarkets.map(m => MARKET_CONFIG[m]);
+  const getPrimaryMarketInfo = () => primaryMarket ? MARKET_CONFIG[primaryMarket as keyof typeof MARKET_CONFIG] : null;
+  const getSelectedMarketsInfo = () => selectedMarkets.map(m => MARKET_CONFIG[m as keyof typeof MARKET_CONFIG]);
 
   const languages = [
     { code: 'en' as Language, name: 'English', flag: '🇺🇸' },
@@ -86,12 +85,12 @@ export function MarketSelector({ className, variant = 'single' }: MarketSelector
               <Globe className="w-4 h-4" />
               {variant === 'single' ? (
                 <span>
-                  {getPrimaryMarketInfo().flag} {getPrimaryMarketInfo().name}
+                  🏷️ {getPrimaryMarketInfo()?.label || 'Select Market'}
                 </span>
               ) : (
                 <span>
                   {selectedMarkets.length === 1
-                    ? `${getPrimaryMarketInfo().flag} ${getPrimaryMarketInfo().name}`
+                    ? `🏷️ ${getPrimaryMarketInfo()?.label || 'Select Market'}`
                     : `${selectedMarkets.length} Markets`
                   }
                 </span>
@@ -115,10 +114,10 @@ export function MarketSelector({ className, variant = 'single' }: MarketSelector
                 onClick={() => handleMarketToggle(market)}
                 className="flex items-center gap-2"
               >
-                <span className="text-lg">{config.flag}</span>
+                <span className="text-lg">🏷️</span>
                 <div className="flex-1">
-                  <div className="font-medium">{config.name}</div>
-                  <div className="text-xs text-muted-foreground">{config.description}</div>
+                  <div className="font-medium">{config.label}</div>
+                  <div className="text-xs text-muted-foreground">{config.language}</div>
                 </div>
                 {isPrimary && <Check className="w-4 h-4" />}
               </DropdownMenuItem>
@@ -129,13 +128,13 @@ export function MarketSelector({ className, variant = 'single' }: MarketSelector
                 onCheckedChange={() => handleMarketToggle(market)}
                 className="flex items-center gap-2"
               >
-                <span className="text-lg">{config.flag}</span>
+                <span className="text-lg">🏷️</span>
                 <div className="flex-1">
                   <div className="font-medium flex items-center gap-1">
-                    {config.name}
+                    {config.label}
                     {isPrimary && <Badge variant="secondary" className="text-xs">Primary</Badge>}
                   </div>
-                  <div className="text-xs text-muted-foreground">{config.description}</div>
+                  <div className="text-xs text-muted-foreground">{config.language}</div>
                 </div>
               </DropdownMenuCheckboxItem>
             );
@@ -145,7 +144,7 @@ export function MarketSelector({ className, variant = 'single' }: MarketSelector
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={toggleComparisonMode}
+                onClick={() => setComparisonMode(!comparisonMode)}
                 className="flex items-center gap-2"
               >
                 <div className="flex-1">
@@ -168,7 +167,7 @@ export function MarketSelector({ className, variant = 'single' }: MarketSelector
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm">
             <Languages className="w-4 h-4 mr-1" />
-            {languages.find(l => l.code === language)?.flag}
+            {languages.find(l => l.code === 'en')?.flag}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
@@ -182,7 +181,7 @@ export function MarketSelector({ className, variant = 'single' }: MarketSelector
             >
               <span className="text-lg">{lang.flag}</span>
               <span>{lang.name}</span>
-              {language === lang.code && <Check className="w-4 h-4 ml-auto" />}
+              {false && <Check className="w-4 h-4 ml-auto" />}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -199,7 +198,7 @@ export function MarketSelector({ className, variant = 'single' }: MarketSelector
                 variant={market === primaryMarket ? "default" : "secondary"}
                 className="text-xs"
               >
-                {config.flag} {config.name}
+                🏷️ {config.label}
               </Badge>
             );
           })}
