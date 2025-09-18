@@ -109,3 +109,5 @@ This project uses **pnpm** as the package manager. Always use pnpm commands, not
 ## BMad Method Integration
 
 This project follows the BMad Method for AI-driven development with documentation in the `docs/` directory organized by stories and architecture contexts.
+
+*** CRITICAL: DO NOT COMMIT WITHOUT ASKING!!!!! ***
