@@ -24,7 +24,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { IngredientsInput } from './ingredients-input';
 import { NutritionInput } from './nutrition-input';
-import type { Market } from '@repo/shared';
+// import type { Market } from '@repo/shared';
+
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
 
 // Dynamic import to prevent hydration issues
 const AdvancedMarketSelector = dynamic(() => import('./advanced-market-selector').then(mod => ({ default: mod.AdvancedMarketSelector })), {

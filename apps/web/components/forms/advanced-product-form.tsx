@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MarketSelector } from './market-selector';
 import { IngredientsInput } from './ingredients-input';
 import { NutritionInput } from './nutrition-input';
-import type { Market } from '@repo/shared';
+// import type { Market } from '@repo/shared';
+
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
 
 interface AdvancedProductFormProps {
   onSubmit: (data: any) => void;

@@ -22,7 +22,7 @@ import {
   Languages
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Market, Label } from '@repo/shared';
+// import type { Label } from '@repo/shared';
 
 interface EnhancedComparisonLayoutProps {
   onGenerateNew: () => void;

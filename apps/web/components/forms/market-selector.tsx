@@ -5,7 +5,9 @@ import { useAppStore } from '@/stores/app-store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { Market } from '@repo/shared';
+// import type { Market } from '@repo/shared';
+
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
 
 const MARKETS = [
   {

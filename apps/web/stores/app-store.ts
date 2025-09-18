@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Market, Language, Label } from '@repo/shared';
+// import type { Market, Language, Label } from '@repo/shared';
+type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
+type Language = 'en' | 'pt' | 'pt-BR' | 'es' | 'zh' | 'ar';
+type Label = any;
 import { MARKET_CONFIG } from '@/lib/market-config';
 
 // Types
@@ -59,8 +62,8 @@ const initialState = {
   isGenerating: false,
   generationProgress: 0,
   labels: [],
-  selectedMarkets: ['US', 'UK'] as Market[], // Default to US and UK markets
-  primaryMarket: 'US' as Market, // Default to US as primary
+  selectedMarkets: [] as Market[], // No markets selected by default
+  primaryMarket: null as Market | null, // No primary market by default
   comparisonMode: false,
   error: null,
 };
@@ -86,8 +89,8 @@ export const useAppStore = create<AppState>()(
         viewState: 'input', 
         isGenerating: false, 
         generationProgress: 0,
-        selectedMarkets: ['US', 'UK'] as Market[],
-        primaryMarket: 'US' as Market,
+        selectedMarkets: [] as Market[],
+        primaryMarket: null as Market | null,
         error: null 
       }),
     }),
