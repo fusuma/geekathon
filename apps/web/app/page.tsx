@@ -1,190 +1,210 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAppStore } from '@/stores/app-store';
+import { EnhancedProductForm } from '@/components/forms/enhanced-product-form';
+import { SimpleGenerationTrace } from '@/components/animations/simple-generation-trace';
+import { EnhancedComparisonLayout } from '@/components/comparison/enhanced-comparison-layout';
 import { useMutation } from '@tanstack/react-query';
-import Link from 'next/link';
-import { Market } from '@repo/shared';
-import { generateLabel, generateMultiMarketLabels } from '../lib/api';
-import { ProductInputForm } from '../components/product-input-form';
-import { LabelDisplay } from '../components/label-display';
-import { EnhancedGenerationTrace } from '../components/animations/enhanced-generation-trace';
-import { MultiMarketSelector } from '../components/market-selector';
-import { SideBySideLayout, SynchronizedComparisonLayout } from '../components/comparison/side-by-side-layout';
-import { useAppStore, useSelectedMarkets, useComparisonMode } from '../stores/app-store';
-import { ProductInputFormData } from '../lib/schemas';
-import { Button } from '../components/ui/button';
 
-type ViewState = 'input' | 'generating' | 'results';
-
-export default function HomePage() {
-  const [viewState, setViewState] = useState<ViewState>('input');
-
-  // Use Zustand store for multi-market state
-  const selectedMarkets = useSelectedMarkets();
-  const comparisonMode = useComparisonMode();
-  const {
-    labels,
-    setLabel,
-    clearLabels,
-    setIsGenerating,
-    setGenerationProgress
-  } = useAppStore();
-
-  // Generation mutation for multi-market support
-  const generateMutation = useMutation({
-    mutationFn: async (formData: ProductInputFormData) => {
-      if (selectedMarkets.length === 1) {
-        // Single market generation
-        const label = await generateLabel({ ...formData, market: selectedMarkets[0]! });
-        return { type: 'single' as const, label, market: selectedMarkets[0]! };
-      } else {
-        // Multi-market generation
-        const productData = {
-          name: formData.name,
-          ingredients: formData.ingredients.split(',').map(i => i.trim()),
-          allergens: formData.allergens?.split(',').map(a => a.trim()),
-          market: selectedMarkets[0]!, // Will be overridden in the API call
-        };
-        const response = await generateMultiMarketLabels(productData, selectedMarkets);
-        return { type: 'multi' as const, labels: response.labels };
-      }
+// API function
+async function generateLabels(productData: any) {
+  const response = await fetch('http://localhost:3001/generate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
     },
-    onMutate: () => {
-      setIsGenerating(true);
-      setGenerationProgress([
-        { id: 'analyzing', name: 'Analyzing Product', status: 'in_progress' },
-        { id: 'regulations', name: 'Researching Regulations', status: 'pending' },
-        { id: 'generating', name: 'Generating Content', status: 'pending' },
-        { id: 'validating', name: 'Validating Compliance', status: 'pending' },
-      ]);
-    },
-    onSuccess: (result) => {
-      if (result.type === 'single') {
-        setLabel(result.market!, result.label);
-      } else {
-        Object.entries(result.labels).forEach(([market, label]) => {
-          setLabel(market as Market, label);
-        });
-      }
-      setIsGenerating(false);
-      setViewState('results');
-    },
-    onError: (error) => {
-      console.error('Label generation failed:', error);
-      setIsGenerating(false);
-      setViewState('input');
-    },
+    body: JSON.stringify(productData),
   });
 
-  const handleFormSubmit = (data: ProductInputFormData) => {
-    setViewState('generating');
-    generateMutation.mutate(data);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export default function HomePage() {
+  const {
+    viewState,
+    isGenerating,
+    generationProgress,
+    labels,
+    selectedMarkets,
+    setViewState,
+    setGenerating,
+    setProgress,
+    setLabels,
+    setProductData,
+    reset,
+    resetForm
+  } = useAppStore();
+
+  // Generation mutation
+  const generateMutation = useMutation({
+    mutationFn: generateLabels,
+    onSuccess: (data) => {
+      console.log('Generation successful:', data);
+      setLabels([data.data]);
+      setViewState('results');
+      setGenerating(false);
+      setProgress(0);
+    },
+    onError: (error) => {
+      console.error('Generation failed:', error);
+      setGenerating(false);
+      setProgress(0);
+    }
+  });
+
+  // Simple progress simulation
+  useEffect(() => {
+    if (isGenerating) {
+      let currentProgress = 0;
+      const interval = setInterval(() => {
+        currentProgress += Math.random() * 10;
+        if (currentProgress >= 100) {
+          currentProgress = 100;
+          clearInterval(interval);
+        }
+        setProgress(currentProgress);
+      }, 200);
+      return () => clearInterval(interval);
+    }
+  }, [isGenerating, setProgress]);
+
+  const handleGenerate = async (formData: any) => {
+    try {
+      console.log('=== GENERATION START ===');
+      console.log('Raw formData received:', formData);
+      console.log('formData type:', typeof formData);
+      console.log('formData keys:', Object.keys(formData || {}));
+      
+      setViewState('generating');
+      setGenerating(true);
+      setProgress(0);
+      
+      // Store product data
+      setProductData(formData);
+      
+      // Transform data for backend - ensure all required fields exist
+      const backendData = {
+        name: formData?.name || formData?.productName || 'Unknown Product',
+        ingredients: Array.isArray(formData?.ingredients) 
+          ? formData.ingredients.join(', ') 
+          : (formData?.ingredients || 'No ingredients specified'),
+        market: formData?.market || formData?.primaryMarket || 'EU',
+        nutrition: formData?.nutrition || {
+          energy: { per100g: { value: 0, unit: 'kcal' } }
+        }
+      };
+      
+      console.log('Transformed backendData:', backendData);
+      console.log('JSON.stringify(backendData):', JSON.stringify(backendData));
+      
+      // Generate labels
+      await generateMutation.mutateAsync(backendData);
+      
+    } catch (error) {
+      console.error('Generation error:', error);
+      setGenerating(false);
+      setProgress(0);
+    }
   };
 
   const handleGenerateNew = () => {
+    resetForm(); // Reset only form data, keep labels
     setViewState('input');
-    clearLabels();
-    generateMutation.reset();
+  };
+
+  const handleBackToInput = () => {
+    setViewState('input');
   };
 
   return (
-    <main className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-center sm:text-left">
-              <h1 className="text-3xl font-bold text-gray-100">
-                SmartLabel AI
-              </h1>
-              <p className="mt-2 text-lg text-gray-300">
-                AI-powered smart food labeling for global markets
-              </p>
+      <header className="bg-gray-800 border-b border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">🏷️</div>
+              <div>
+                <h1 className="text-2xl font-bold">SmartLabel AI</h1>
+                <p className="text-sm text-gray-400">Intelligent Label Generation</p>
+              </div>
             </div>
-
-            {/* Market Selector and Navigation */}
-            <div className="mt-4 sm:mt-0 flex items-center gap-4">
-              <Link href="/crisis">
-                <Button className="bg-red-600 hover:bg-red-700 text-white font-semibold">
-                  🚨 Crisis Response
-                </Button>
-              </Link>
-              <MultiMarketSelector />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {viewState === 'input' && (
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-gray-100 mb-2">
-                Generate Smart Label
-              </h2>
-              <p className="text-gray-300">
-                Enter your product information to generate compliant EU food labels with AI assistance.
-              </p>
-            </div>
-
-            <ProductInputForm
-              onSubmit={handleFormSubmit}
-              isLoading={generateMutation.isPending}
-            />
-
-            {generateMutation.error && (
-              <div className="mt-4 bg-red-900/20 border border-red-600/30 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-red-400">
-                  Generation Error
-                </h3>
-                <p className="text-sm text-red-300 mt-1">
-                  {generateMutation.error.message}
-                </p>
+            
+            {viewState === 'results' && (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleBackToInput}
+                  className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                >
+                  ← Back to Input
+                </button>
+                <button
+                  onClick={handleGenerateNew}
+                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                >
+                  Generate New
+                </button>
               </div>
             )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {viewState === 'input' && (
+          <div className="max-w-6xl mx-auto">
+            <EnhancedProductForm
+              onSubmit={handleGenerate}
+              isGenerating={isGenerating}
+            />
           </div>
         )}
 
         {viewState === 'generating' && (
-          <div className="bg-gray-800 rounded-lg border border-gray-700 relative overflow-hidden">
-            <EnhancedGenerationTrace />
+          <div className="max-w-4xl mx-auto">
+            <SimpleGenerationTrace />
           </div>
         )}
 
-        {viewState === 'results' && Object.keys(labels).length > 0 && (
-          comparisonMode && selectedMarkets.length > 1 ? (
-            // Enhanced comparison layout
-            <SynchronizedComparisonLayout onGenerateNew={handleGenerateNew} />
-          ) : selectedMarkets.length > 1 ? (
-            // Basic side-by-side layout
-            <SideBySideLayout onGenerateNew={handleGenerateNew} />
-          ) : (
-            // Single label view
-            (() => {
-              const firstLabel = Object.values(labels)[0];
-              return firstLabel ? (
-                <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                  <LabelDisplay
-                    label={firstLabel}
-                    onGenerateNew={handleGenerateNew}
-                  />
-                </div>
-              ) : null;
-            })()
-          )
+        {viewState === 'results' && (
+          <div className="w-full">
+            <EnhancedComparisonLayout onGenerateNew={handleGenerateNew} />
+          </div>
         )}
-      </div>
+
+        {/* Error display */}
+        {generateMutation.error && (
+          <div className="fixed bottom-4 right-4 bg-red-600 text-white p-4 rounded-lg shadow-lg max-w-md">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">❌</span>
+              <div>
+                <h4 className="font-semibold">Generation Failed</h4>
+                <p className="text-sm">
+                  {generateMutation.error?.message || 'An unknown error occurred'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
 
       {/* Footer */}
-      <footer className="bg-gray-800/50 border-t border-gray-700 mt-16">
+      <footer className="bg-gray-800 border-t border-gray-700 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-sm text-gray-400">
-            <p>SmartLabel AI - Geekathon 2025 Project</p>
-            <p className="mt-1">Powered by AWS Bedrock and Claude AI</p>
+          <div className="text-center text-gray-400">
+            <p>SmartLabel AI - Powered by Advanced AI Technology</p>
+            <p className="text-sm mt-2">
+              Generate compliant labels for multiple markets with intelligent automation
+            </p>
           </div>
         </div>
       </footer>
-    </main>
+    </div>
   );
 }

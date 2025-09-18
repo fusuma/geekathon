@@ -340,13 +340,14 @@ function getCrisisAIConfig(severity: CrisisSeverity) {
     }
   };
 
-  return configs[severity] || configs.medium;
+  const severityConfigs: Record<CrisisSeverity, any> = configs;
+  return severityConfigs[severity] || configs.medium;
 }
 
 /**
  * Crisis-specific fallback templates for when AI service is unavailable
  */
-const CRISIS_FALLBACK_TEMPLATES = {
+const CRISIS_FALLBACK_TEMPLATES: Record<CrisisType, { warning: string; action: string; communication: string }> = {
   contamination: {
     warning: 'DO NOT CONSUME - POTENTIAL CONTAMINATION DETECTED',
     action: 'Stop all production and distribution immediately',
@@ -383,6 +384,10 @@ function getCrisisFallbackResponse(
   market?: Market
 ): string {
   const template = CRISIS_FALLBACK_TEMPLATES[params.crisisType];
+  
+  if (!template) {
+    return `Crisis fallback response for ${params.crisisType}`;
+  }
 
   switch (promptType) {
     case 'label':

@@ -16,6 +16,7 @@
     "@aws-sdk/client-dynamodb": "^3.445.0",
     "@aws-sdk/lib-dynamodb": "^3.445.0",
     "@repo/shared": "workspace:*",
+    "dotenv": "^17.2.2",
     "zod": "^3.22.4"
   },
   "devDependencies": {

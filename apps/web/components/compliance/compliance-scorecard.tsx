@@ -10,7 +10,8 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { useAppStore, MARKET_CONFIG } from '@/stores/app-store';
+import { useAppStore } from '@/stores/app-store';
+import { MARKET_CONFIG } from '@/lib/market-config';
 import type { Market, Label } from '@repo/shared';
 
 // Compliance scoring types
@@ -84,7 +85,7 @@ function calculateComplianceScore(label: Label): ComplianceScore {
   }
 
   // Certifications scoring (based on market)
-  const marketConfig = MARKET_CONFIG[label.market];
+  const marketConfig = MARKET_CONFIG[label.market as keyof typeof MARKET_CONFIG];
   if (label.market === 'EU' || label.market === 'ES') {
     categories.certifications = 85;
   } else if (label.market === 'BR') {
@@ -146,15 +147,15 @@ export function ComplianceScorecard({ market, label, className }: ComplianceScor
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
-  const marketConfig = MARKET_CONFIG[market];
+  const marketConfig = MARKET_CONFIG[market as keyof typeof MARKET_CONFIG];
 
   if (!label) {
     return (
       <div className={cn('bg-gray-800 border border-gray-700 rounded-lg p-6', className)}>
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-2xl">{marketConfig.flag}</span>
+          <span className="text-2xl">🏷️</span>
           <div>
-            <h3 className="text-lg font-semibold text-gray-100">{marketConfig.name}</h3>
+            <h3 className="text-lg font-semibold text-gray-100">{marketConfig?.label || market}</h3>
             <p className="text-sm text-gray-400">Compliance Analysis</p>
           </div>
         </div>
@@ -169,7 +170,7 @@ export function ComplianceScorecard({ market, label, className }: ComplianceScor
 
   const handleExportCompliance = () => {
     const exportData = {
-      market: marketConfig.name,
+      market: marketConfig?.label || market,
       labelId: label.labelId,
       compliance,
       timestamp: new Date().toISOString(),
@@ -191,9 +192,9 @@ export function ComplianceScorecard({ market, label, className }: ComplianceScor
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{marketConfig.flag}</span>
+          <span className="text-2xl">🏷️</span>
           <div>
-            <h3 className="text-lg font-semibold text-gray-100">{marketConfig.name}</h3>
+            <h3 className="text-lg font-semibold text-gray-100">{marketConfig?.label || market}</h3>
             <p className="text-sm text-gray-400">Compliance Scorecard</p>
           </div>
         </div>
@@ -314,13 +315,16 @@ export function ComplianceComparison({ markets, className }: { markets: Market[]
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {markets.map((market) => (
-          <ComplianceScorecard
-            key={market}
-            market={market}
-            label={labels[market]}
-          />
-        ))}
+        {markets.map((market) => {
+          const label = labels.find(l => l.market === market);
+          return (
+            <ComplianceScorecard
+              key={market}
+              market={market}
+              label={label}
+            />
+          );
+        })}
       </div>
     </div>
   );

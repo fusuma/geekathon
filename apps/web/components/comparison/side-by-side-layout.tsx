@@ -5,8 +5,8 @@ import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LabelDisplay } from '@/components/label-display';
 import { cn } from '@/lib/utils';
-import { useAppStore, useSelectedMarkets, useLabels } from '@/stores/app-store';
-import { MARKET_CONFIG } from '@/stores/app-store';
+import { useAppStore } from '@/stores/app-store';
+import { MARKET_CONFIG } from '@/lib/market-config';
 import type { Market } from '@repo/shared';
 
 interface SideBySideLayoutProps {
@@ -15,13 +15,13 @@ interface SideBySideLayoutProps {
 }
 
 export function SideBySideLayout({ onGenerateNew, className }: SideBySideLayoutProps) {
-  const selectedMarkets = useSelectedMarkets();
-  const labels = useLabels();
+  const selectedMarkets = useAppStore(state => state.selectedMarkets);
+  const labels = useAppStore(state => state.labels);
   const [activeMarketIndex, setActiveMarketIndex] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Filter out markets that don't have labels generated
-  const marketsWithLabels = selectedMarkets.filter(market => labels[market]);
+  const marketsWithLabels = selectedMarkets.filter(market => labels.find(label => label.market === market));
 
   if (marketsWithLabels.length === 0) {
     return (
@@ -35,7 +35,7 @@ export function SideBySideLayout({ onGenerateNew, className }: SideBySideLayoutP
   if (marketsWithLabels.length === 1) {
     const market = marketsWithLabels[0];
     if (!market) return null;
-    const label = labels[market];
+    const label = labels.find(l => l.market === market);
     return label ? (
       <div className={cn('w-full', className)}>
         <LabelDisplay
@@ -51,7 +51,7 @@ export function SideBySideLayout({ onGenerateNew, className }: SideBySideLayoutP
   const MobileView = () => {
     const currentMarket = marketsWithLabels[activeMarketIndex];
     if (!currentMarket) return null;
-    const currentLabel = labels[currentMarket];
+    const currentLabel = labels.find(l => l.market === currentMarket);
 
     return (
       <div className="lg:hidden">
@@ -66,10 +66,10 @@ export function SideBySideLayout({ onGenerateNew, className }: SideBySideLayoutP
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
-          <div className="text-center">
-            <div className="text-lg font-medium text-gray-100">
-              {MARKET_CONFIG[currentMarket]?.flag} {MARKET_CONFIG[currentMarket]?.name}
-            </div>
+            <div className="text-center">
+              <div className="text-lg font-medium text-gray-100">
+                {MARKET_CONFIG[currentMarket as keyof typeof MARKET_CONFIG]?.label}
+              </div>
             <div className="text-sm text-gray-400">
               {activeMarketIndex + 1} of {marketsWithLabels.length}
             </div>
@@ -137,7 +137,7 @@ export function SideBySideLayout({ onGenerateNew, className }: SideBySideLayoutP
           isExpanded && 'grid-cols-1 space-y-6'
         )}>
           {marketsWithLabels.map((market) => {
-            const label = labels[market];
+            const label = labels.find(l => l.market === market);
             return label ? (
               <div
                 key={market}
@@ -157,12 +157,12 @@ export function SideBySideLayout({ onGenerateNew, className }: SideBySideLayoutP
                 key={market}
                 className="bg-gray-800 rounded-lg border border-gray-700 p-6"
               >
-                <div className="text-center text-gray-400">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl">{MARKET_CONFIG[market].flag}</span>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-100">{MARKET_CONFIG[market].name}</h3>
-                      <p className="text-sm text-gray-400">{MARKET_CONFIG[market].description}</p>
+                  <div className="text-center text-gray-400">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-2xl">🌍</span>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-100">{MARKET_CONFIG[market as keyof typeof MARKET_CONFIG]?.label}</h3>
+                        <p className="text-sm text-gray-400">{MARKET_CONFIG[market as keyof typeof MARKET_CONFIG]?.language}</p>
                     </div>
                   </div>
                   <p>No label generated for this market</p>
@@ -185,12 +185,12 @@ export function SideBySideLayout({ onGenerateNew, className }: SideBySideLayoutP
 
 // Enhanced comparison component with synchronization
 export function SynchronizedComparisonLayout({ onGenerateNew, className }: SideBySideLayoutProps) {
-  const selectedMarkets = useSelectedMarkets();
-  const labels = useLabels();
+  const selectedMarkets = useAppStore(state => state.selectedMarkets);
+  const labels = useAppStore(state => state.labels);
   const [syncScroll, setSyncScroll] = useState(true);
   const [focusedSection, setFocusedSection] = useState<string | null>(null);
 
-  const marketsWithLabels = selectedMarkets.filter(market => labels[market]);
+  const marketsWithLabels = selectedMarkets.filter(market => labels.find(l => l.market === market));
 
   if (marketsWithLabels.length < 2) {
     return (
@@ -222,7 +222,7 @@ export function SynchronizedComparisonLayout({ onGenerateNew, className }: SideB
       {/* Synchronized Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {marketsWithLabels.map((market) => {
-          const label = labels[market];
+          const label = labels.find(l => l.market === market);
           return label ? (
             <div
               key={market}

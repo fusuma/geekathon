@@ -4,7 +4,7 @@ import { Label } from "@repo/shared"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Copy, Download, Eye, EyeOff } from "lucide-react"
-import { MARKET_CONFIG } from "@/stores/app-store"
+import { MARKET_CONFIG } from "@/lib/market-config"
 import { ExportDialog } from "@/components/export/export-dialog"
 import { useState } from "react"
 
@@ -15,7 +15,7 @@ interface LabelDisplayProps {
 }
 
 export function LabelDisplay({ label, onGenerateNew, showMarketHeader = false }: LabelDisplayProps) {
-  const marketConfig = MARKET_CONFIG[label.market];
+  const marketConfig = MARKET_CONFIG[label.market as keyof typeof MARKET_CONFIG];
   const [showDetails, setShowDetails] = useState({
     ingredients: true,
     allergens: true,
@@ -53,10 +53,10 @@ COMPLIANCE NOTES: ${label.labelData.complianceNotes.join(', ')}
       {/* Market Header (for comparison view) */}
       {showMarketHeader && (
         <div className="flex items-center gap-3 pb-4 border-b border-gray-600">
-          <span className="text-2xl">{marketConfig.flag}</span>
+          <span className="text-2xl">🏷️</span>
           <div>
-            <h3 className="text-lg font-semibold text-gray-100">{marketConfig.name}</h3>
-            <p className="text-sm text-gray-400">{marketConfig.description}</p>
+            <h3 className="text-lg font-semibold text-gray-100">{marketConfig?.label || label.market}</h3>
+            <p className="text-sm text-gray-400">Market: {label.market}</p>
           </div>
           <Badge variant="secondary" className="ml-auto">
             {label.language.toUpperCase()}

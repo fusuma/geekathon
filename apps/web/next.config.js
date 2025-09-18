@@ -3,12 +3,14 @@ const nextConfig = {
   // Performance Optimizations
   experimental: {
     optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react', 'framer-motion'],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
+  },
+  
+  // Turbopack configuration
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
       },
     },
   },
@@ -100,7 +102,7 @@ const nextConfig = {
   },
 
   // Enable runtime optimizations
-  swcMinify: true,
+  // swcMinify is now enabled by default in Next.js 13+
   modularizeImports: {
     'lucide-react': {
       transform: 'lucide-react/dist/esm/icons/{{kebabCase member}}',

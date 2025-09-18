@@ -127,14 +127,14 @@ export function useFocusManagement() {
   const focusFirst = useCallback((container: HTMLElement) => {
     const focusableElements = getFocusableElements(container);
     if (focusableElements.length > 0) {
-      focusableElements[0].focus();
+      focusableElements[0]?.focus();
     }
   }, []);
 
   const focusLast = useCallback((container: HTMLElement) => {
     const focusableElements = getFocusableElements(container);
     if (focusableElements.length > 0) {
-      focusableElements[focusableElements.length - 1].focus();
+      focusableElements[focusableElements.length - 1]?.focus();
     }
   }, []);
 
@@ -265,7 +265,7 @@ export function useKeyboardNavigation(
       }
 
       if (nextIndex !== currentIndex && focusableElements[nextIndex]) {
-        focusableElements[nextIndex].focus();
+        focusableElements[nextIndex]?.focus();
       }
     };
 
@@ -317,20 +317,20 @@ export function checkColorContrast(
     if (!rgb) return 0;
 
     const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((c) => {
-      c = c / 255;
-      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      const normalized = c / 255;
+      return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
     });
 
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return 0.2126 * (r || 0) + 0.7152 * (g || 0) + 0.0722 * (b || 0);
   };
 
   const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
+          r: parseInt(result[1] || '0', 16),
+          g: parseInt(result[2] || '0', 16),
+          b: parseInt(result[3] || '0', 16),
         }
       : null;
   };

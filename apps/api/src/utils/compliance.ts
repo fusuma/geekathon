@@ -162,7 +162,7 @@ export function validateSpainCompliance(
     }
 
     // Check for Spanish regulatory compliance notes
-    const hasSpanishComplianceNotes = labelData.complianceNotes.some(note =>
+    const hasSpanishComplianceNotes = labelData.complianceNotes.some((note: any) =>
       note.toLowerCase().includes('spain') ||
       note.toLowerCase().includes('spanish') ||
       note.toLowerCase().includes('aecosan')
