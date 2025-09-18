@@ -7,8 +7,8 @@ export interface HelloWorldResponse {
 }
 
 // Market and language support types
-export type Market = 'EU' | 'ES' | 'AO' | 'MO' | 'BR';
-export type Language = 'en' | 'pt' | 'pt-BR';
+export type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
+export type Language = 'en' | 'pt' | 'pt-BR' | 'es' | 'zh' | 'ar';
 
 export interface MarketSpecificData {
   certifications: string[];

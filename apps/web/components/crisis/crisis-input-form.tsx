@@ -15,7 +15,7 @@ const crisisInputSchema = z.object({
   crisisType: z.enum(['contamination', 'allergen', 'packaging', 'regulatory', 'supply-chain']),
   severity: z.enum(['low', 'medium', 'high', 'critical']),
   affectedProducts: z.string().min(1, "At least one affected product is required"),
-  affectedMarkets: z.array(z.enum(['EU', 'ES', 'AO', 'MO', 'BR'])).min(1, "At least one market must be selected"),
+  affectedMarkets: z.array(z.enum(['US', 'UK', 'ES', 'AO', 'MO', 'BR', 'AE'])).min(1, "At least one market must be selected"),
   description: z.string().min(10, "Please provide a detailed description"),
   timeline: z.string().min(1, "Timeline is required"),
   immediateActions: z.string().optional(),
@@ -44,11 +44,13 @@ const severityLevels: { value: CrisisSeverity; label: string; color: string }[] 
 ];
 
 const markets: { value: Market; label: string }[] = [
-  { value: 'EU', label: 'European Union' },
+  { value: 'US', label: 'United States' },
+  { value: 'UK', label: 'United Kingdom' },
   { value: 'ES', label: 'Spain' },
   { value: 'AO', label: 'Angola' },
   { value: 'MO', label: 'Macau' },
   { value: 'BR', label: 'Brazil' },
+  { value: 'AE', label: 'UAE (Halal)' },
 ];
 
 export function CrisisInputForm({ onSubmit, isLoading = false }: CrisisInputFormProps) {
@@ -62,7 +64,7 @@ export function CrisisInputForm({ onSubmit, isLoading = false }: CrisisInputForm
   } = useForm<CrisisInputFormData>({
     resolver: zodResolver(crisisInputSchema),
     defaultValues: {
-      affectedMarkets: ['EU'],
+      affectedMarkets: ['UK'],
       severity: 'medium',
       crisisType: 'contamination',
     },

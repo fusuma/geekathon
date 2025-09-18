@@ -21,7 +21,30 @@ interface MarketRule {
 }
 
 const MARKET_RULES: Record<string, MarketRule[]> = {
-  EU: [
+  US: [
+    {
+      id: 'allergens',
+      title: 'Allergen Declaration',
+      description: '8 major allergens must be declared',
+      severity: 'error',
+      required: true,
+    },
+    {
+      id: 'nutrition',
+      title: 'Nutrition Facts Panel',
+      description: 'Mandatory per serving with %DV',
+      severity: 'error',
+      required: true,
+    },
+    {
+      id: 'language',
+      title: 'Language Requirements',
+      description: 'English language required',
+      severity: 'warning',
+      required: true,
+    },
+  ],
+  UK: [
     {
       id: 'allergens',
       title: 'Allergen Declaration',
@@ -39,7 +62,30 @@ const MARKET_RULES: Record<string, MarketRule[]> = {
     {
       id: 'language',
       title: 'Language Requirements',
-      description: 'Must be in official language of member state',
+      description: 'English language required',
+      severity: 'warning',
+      required: true,
+    },
+  ],
+  ES: [
+    {
+      id: 'allergens',
+      title: 'Allergen Declaration',
+      description: '14 major allergens must be highlighted in bold or CAPS',
+      severity: 'error',
+      required: true,
+    },
+    {
+      id: 'nutrition',
+      title: 'Nutritional Values',
+      description: 'Mandatory per 100g/ml with specific format',
+      severity: 'error',
+      required: true,
+    },
+    {
+      id: 'language',
+      title: 'Language Requirements',
+      description: 'Spanish language required',
       severity: 'warning',
       required: true,
     },

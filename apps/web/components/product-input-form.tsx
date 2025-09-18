@@ -22,7 +22,7 @@ export function ProductInputForm({ onSubmit, isLoading = false }: ProductInputFo
   } = useForm<ProductInputFormData>({
     resolver: zodResolver(productInputSchema),
     defaultValues: {
-      market: "EU",
+      market: "UK",
     },
   })
 

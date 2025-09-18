@@ -5,11 +5,17 @@ export const MARKET_CONFIG = {
     requirements: ['FDA Food Labeling Requirements', 'USDA Standards'],
     regulations: ['English language required', 'Nutritional values per serving', 'Allergen declaration required'],
   },
-  EU: {
-    label: 'European Union (Spain)',
+  UK: {
+    label: 'United Kingdom',
+    language: 'EN',
+    requirements: ['UK Food Information Regulations 2014', 'FSA Guidelines'],
+    regulations: ['English language required', 'Allergens must be highlighted', 'Nutritional values per 100g/ml'],
+  },
+  ES: {
+    label: 'Spain',
     language: 'ES',
     requirements: ['EU Food Information Regulation (FIC)', 'Spanish Royal Decree 1245/2008'],
-    regulations: ['Allergens must be highlighted', 'Nutritional values per 100g/ml'],
+    regulations: ['Spanish language required', 'Allergens must be highlighted', 'Nutritional values per 100g/ml'],
   },
   BR: {
     label: 'Brazil',

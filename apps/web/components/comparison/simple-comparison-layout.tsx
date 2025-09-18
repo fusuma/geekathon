@@ -11,9 +11,11 @@ interface SimpleComparisonLayoutProps {
 }
 
 const MARKET_INFO = {
-  EU: { name: 'European Union', flag: '🇪🇺', color: 'bg-blue-100 dark:bg-blue-900/20' },
+  US: { name: 'United States', flag: '🇺🇸', color: 'bg-blue-100 dark:bg-blue-900/20' },
+  UK: { name: 'United Kingdom', flag: '🇬🇧', color: 'bg-blue-100 dark:bg-blue-900/20' },
+  ES: { name: 'Spain', flag: '🇪🇸', color: 'bg-red-100 dark:bg-red-900/20' },
   BR: { name: 'Brazil', flag: '🇧🇷', color: 'bg-green-100 dark:bg-green-900/20' },
-  AO: { name: 'Angola', flag: '🇦🇴', color: 'bg-red-100 dark:bg-red-900/20' },
+  AO: { name: 'Angola', flag: '🇦🇴', color: 'bg-orange-100 dark:bg-orange-900/20' },
   MO: { name: 'Macau', flag: '🇲🇴', color: 'bg-yellow-100 dark:bg-yellow-900/20' },
   AE: { name: 'UAE (Halal)', flag: '🇦🇪', color: 'bg-purple-100 dark:bg-purple-900/20' }
 };
