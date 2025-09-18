@@ -141,22 +141,31 @@ export default function HomePage() {
               </div>
             </div>
             
-            {viewState === 'results' && (
-              <div className="flex gap-2">
-                <button
-                  onClick={handleBackToInput}
-                  className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                >
-                  ← Back to Input
-                </button>
-                <button
-                  onClick={handleGenerateNew}
-                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-                >
-                  Generate New
-                </button>
-              </div>
-            )}
+            <div className="flex gap-2">
+              <a
+                href="/crisis"
+                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2"
+              >
+                🚨 Crisis Response
+              </a>
+              
+              {viewState === 'results' && (
+                <>
+                  <button
+                    onClick={handleBackToInput}
+                    className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                  >
+                    ← Back to Input
+                  </button>
+                  <button
+                    onClick={handleGenerateNew}
+                    className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                  >
+                    Generate New
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
