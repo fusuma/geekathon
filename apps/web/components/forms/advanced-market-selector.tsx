@@ -256,7 +256,7 @@ export function AdvancedMarketSelector() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Market Selection Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Object.entries(MARKET_CONFIG).map(([marketKey, marketInfo]) => {
             const isSelected = selectedMarkets.includes(marketKey as Market);
             const isPrimary = primaryMarket === marketKey;
@@ -266,13 +266,13 @@ export function AdvancedMarketSelector() {
             return (
               <Card
                 key={marketKey}
-                className={`cursor-pointer transition-all duration-200 ${
+                className={`cursor-pointer transition-all duration-200 rounded-xl border-2 bg-gray-800/50 shadow-sm ${
                   isSelected
-                    ? 'border-blue-500 bg-blue-900/20'
-                    : 'border-gray-600 hover:border-gray-500'
-                } ${isPrimary ? 'ring-2 ring-blue-400' : ''}`}
+                    ? 'border-blue-500 bg-blue-900/20 shadow-blue-500/20'
+                    : 'border-gray-600 hover:border-gray-500 hover:shadow-md'
+                } ${isPrimary ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-900' : ''}`}
               >
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
                       <Checkbox
@@ -283,13 +283,21 @@ export function AdvancedMarketSelector() {
                         className="mt-1"
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <div>
-                        <CardTitle className="text-lg">{marketInfo.label}</CardTitle>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg font-semibold tracking-tight text-gray-100">
+                          {marketInfo.label}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs font-semibold px-2.5 py-0.5 border-gray-500 text-gray-300"
+                          >
                             {marketInfo.language}
                           </Badge>
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge 
+                            variant="secondary" 
+                            className="text-xs font-semibold px-2.5 py-0.5 bg-gray-700 text-gray-200 border-transparent"
+                          >
                             {rules.length} rules
                           </Badge>
                         </div>
@@ -302,7 +310,7 @@ export function AdvancedMarketSelector() {
                         e.stopPropagation();
                         toggleMarketExpansion(marketKey);
                       }}
-                      className="p-1 h-8 w-8"
+                      className="p-1 h-8 w-8 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-colors"
                     >
                       <Info className="h-4 w-4" />
                     </Button>
@@ -356,8 +364,8 @@ export function AdvancedMarketSelector() {
                 )}
 
                 {isSelected && (
-                  <CardContent className="pt-0">
-                    <div className="flex items-center space-x-2">
+                  <CardContent className="pt-0 pb-4">
+                    <div className="flex items-center space-x-2 p-2 rounded-lg bg-gray-700/30 border border-gray-600">
                       <input
                         type="radio"
                         id={`primary-market-${marketKey}`}
@@ -365,12 +373,12 @@ export function AdvancedMarketSelector() {
                         value={marketKey}
                         checked={isPrimary}
                         onChange={() => handlePrimaryMarketChange(marketKey as Market)}
-                        className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+                        className="form-radio h-4 w-4 text-blue-500 border-gray-400 focus:ring-blue-500 transition duration-150 ease-in-out"
                         onClick={(e) => e.stopPropagation()}
                       />
                       <Label
                         htmlFor={`primary-market-${marketKey}`}
-                        className="text-xs text-gray-400 cursor-pointer"
+                        className="text-xs text-gray-300 cursor-pointer font-medium"
                         onClick={(e) => e.stopPropagation()}
                       >
                         Set as Primary Market
