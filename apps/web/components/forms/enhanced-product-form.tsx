@@ -228,44 +228,6 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6 bg-gray-900"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-100 mb-2 flex items-center gap-2">
-            <Package className="h-8 w-8" />
-            SmartLabel Generator
-          </h1>
-          <p className="text-gray-400">
-            Create AI-powered compliant labels for multiple markets
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {hasUnsavedChanges && (
-            <Badge variant="outline" className="text-yellow-400 border-yellow-400">
-              <Save className="h-3 w-3 mr-1" />
-              Unsaved Changes
-            </Badge>
-          )}
-          <Button
-            variant="outline"
-            onClick={handleAddExampleData}
-            className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
-            disabled={isGenerating}
-          >
-            <Zap className="h-4 w-4 mr-2" />
-            Example Data
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
-            disabled={isGenerating}
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Reset
-          </Button>
-        </div>
-      </div>
 
       {/* Validation Alerts */}
       <AnimatePresence>
@@ -296,10 +258,38 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
         {/* Product Name */}
         <Card className="bg-gray-800 border-gray-700 text-white">
           <CardHeader>
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Product Information
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Product Information
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {hasUnsavedChanges && (
+                  <Badge variant="outline" className="text-yellow-400 border-yellow-400">
+                    <Save className="h-3 w-3 mr-1" />
+                    Unsaved Changes
+                  </Badge>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={handleAddExampleData}
+                  className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                  disabled={isGenerating}
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Example Data
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleReset}
+                  className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                  disabled={isGenerating}
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Reset
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div>
