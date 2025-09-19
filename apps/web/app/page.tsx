@@ -6,6 +6,8 @@ import { SimpleGenerationTrace } from '@/components/animations/simple-generation
 import { EnhancedComparisonLayout } from '@/components/comparison/enhanced-comparison-layout';
 import { CrisisResponseForm } from '@/components/forms/crisis-response-form';
 import { CrisisAnalysisResults } from '@/components/crisis/crisis-analysis-results';
+import AuthGuard from '@/components/AuthGuard';
+import UserHeader from '@/components/UserHeader';
 
 
 interface Label {
@@ -613,11 +615,12 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-900 text-white">
+        {/* Header */}
+        <header className="bg-gray-800 border-b border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img 
                 src="/smartlabel-logo.svg" 
@@ -658,6 +661,9 @@ export default function HomePage() {
                 + Create New Label
               </button>
             </div>
+            
+            {/* User Header */}
+            <UserHeader />
           </div>
         </div>
       </header>
@@ -997,6 +1003,7 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </AuthGuard>
   );
 }
