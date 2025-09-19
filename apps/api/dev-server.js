@@ -7,6 +7,8 @@ const cors = require('cors');
 // Import our Lambda handlers
 const { handler: helloHandler } = require('./dist/handlers/hello');
 const { handler: generateHandler } = require('./dist/handlers/generate-dev');
+const { handler: authHandler } = require('./dist/handlers/auth');
+const { handler: usersHandler } = require('./dist/handlers/users');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -77,8 +79,62 @@ app.post('/generate', async (req, res) => {
   }
 });
 
+// Auth endpoints
+app.post('/auth/login', async (req, res) => {
+  try {
+    const event = {
+      httpMethod: 'POST',
+      path: '/auth/login',
+      headers: req.headers,
+      queryStringParameters: req.query,
+      body: JSON.stringify(req.body),
+    };
+
+    const result = await authHandler(event);
+
+    if (result.headers) {
+      Object.keys(result.headers).forEach(key => {
+        res.set(key, result.headers[key]);
+      });
+    }
+
+    res.status(result.statusCode).send(result.body);
+  } catch (error) {
+    console.error('Auth handler error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Users endpoints
+app.post('/users', async (req, res) => {
+  try {
+    const event = {
+      httpMethod: 'POST',
+      path: '/users',
+      headers: req.headers,
+      queryStringParameters: req.query,
+      body: JSON.stringify(req.body),
+    };
+
+    const result = await usersHandler(event);
+
+    if (result.headers) {
+      Object.keys(result.headers).forEach(key => {
+        res.set(key, result.headers[key]);
+      });
+    }
+
+    res.status(result.statusCode).send(result.body);
+  } catch (error) {
+    console.error('Users handler error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`🚀 Dev server running on http://localhost:${port}`);
   console.log(`📡 Hello endpoint: http://localhost:${port}/hello`);
   console.log(`📡 Generate endpoint: http://localhost:${port}/generate`);
+  console.log(`📡 Auth login endpoint: http://localhost:${port}/auth/login`);
+  console.log(`📡 Users endpoint: http://localhost:${port}/users`);
 });
