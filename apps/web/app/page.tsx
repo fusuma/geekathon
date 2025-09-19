@@ -616,63 +616,67 @@ export default function HomePage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-900 text-white">
-        {/* Header */}
-        <header className="bg-gray-800 border-b border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Header */}
+        <header className="bg-gray-900 border-b border-gray-700">
+          <div className="flex h-14 items-center justify-between gap-8 px-4 sm:px-6">
+            <div className="flex items-center gap-4">
+              <a className="shrink-0" aria-label="Home" href="/">
               <img 
                 src="/smartlabel-logo.svg" 
-                alt="SmartLabel AI Logo" 
+                  alt="SmartLabel" 
                 className="h-8 w-auto"
               />
-              <div>
-                <h1 className="text-2xl font-bold">SmartLabel AI</h1>
-                <p className="text-sm text-gray-400">Intelligent Label Generation</p>
-              </div>
+              </a>
             </div>
-            
-            <div className="flex gap-2">
+            <div className="flex items-center gap-6 max-md:hidden">
               <button
                 type="button"
                 onClick={() => setShowCrisis(true)}
-                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2"
+                className="text-sm/6 text-gray-950 dark:text-white hover:text-sky-600 dark:hover:text-sky-300"
               >
-                ⚡ Crisis Response
+                Crisis Response
               </button>
-              
               <button
                 type="button"
                 onClick={() => {
                   setShowCrisis(false);
                   setCurrentStep('labels');
                 }}
-                className="px-4 py-2 text-sm bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+                className="text-sm/6 text-gray-950 dark:text-white hover:text-sky-600 dark:hover:text-sky-300"
               >
-                📋 View Labels
+                View Labels
               </button>
-              
               <button
                 type="button"
                 onClick={() => {
                   setShowCrisis(false);
                   setCurrentStep('form');
                 }}
-                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                className="text-sm/6 text-gray-950 dark:text-white hover:text-sky-600 dark:hover:text-sky-300"
               >
                 + Create New Label
               </button>
+              <UserHeader />
             </div>
-            
-            {/* User Header */}
-            <UserHeader />
+            <div className="flex items-center gap-2.5 md:hidden">
+              <button type="button" aria-label="Search" className="inline-grid size-7 place-items-center rounded-md">
+                <svg viewBox="0 0 16 16" fill="currentColor" className="size-4">
+                  <path fillRule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clipRule="evenodd"></path>
+                </svg>
+              </button>
+              <button type="button" className="relative inline-grid size-7 place-items-center rounded-md text-gray-950 hover:bg-gray-950/5 dark:text-white dark:hover:bg-white/10 undefined" aria-label="Navigation">
+                <span className="absolute top-1/2 left-1/2 size-11 -translate-1/2 pointer-fine:hidden"></span>
+                <svg viewBox="0 0 16 16" fill="currentColor" className="size-4">
+                  <path d="M8 2a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM8 6.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM9.5 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z"></path>
+                </svg>
+              </button>
           </div>
         </div>
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-900">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
         {showCrisis ? (
           <>
             {crisisStep === 'form' && (
@@ -713,7 +717,7 @@ export default function HomePage() {
         ) : (
           <>
             {currentStep === 'form' && (
-              <div className="max-w-6xl mx-auto bg-gray-900">
+              <div className="max-w-6xl mx-auto text-white">
                 <EnhancedProductForm
                   onSubmit={handleFormSubmit}
                   isGenerating={false}
@@ -1017,7 +1021,7 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-      </div>
+    </div>
     </AuthGuard>
   );
 }

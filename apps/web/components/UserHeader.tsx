@@ -13,7 +13,7 @@ export default function UserHeader() {
     <div className="relative">
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="flex items-center space-x-3 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
+        className="flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
       >
         <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-orange-500 rounded-full flex items-center justify-center">
           <span className="text-white text-sm font-medium">
