@@ -83,6 +83,7 @@ export function NutritionInput({ nutrition = {
           <span>Nutritional Information (per 100g)</span>
           <div className="flex gap-2">
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={fillSampleData}
@@ -90,6 +91,7 @@ export function NutritionInput({ nutrition = {
               Sample Data
             </Button>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={resetToZero}
@@ -97,6 +99,7 @@ export function NutritionInput({ nutrition = {
               Reset
             </Button>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => setShowAdvanced(!showAdvanced)}

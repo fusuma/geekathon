@@ -100,6 +100,7 @@ export function IngredientsInput({ ingredients = [], onChange }: IngredientsInpu
           </div>
           <div className="flex gap-2">
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={fillSampleIngredients}
@@ -107,6 +108,7 @@ export function IngredientsInput({ ingredients = [], onChange }: IngredientsInpu
               Sample Data
             </Button>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={clearAll}
@@ -115,6 +117,7 @@ export function IngredientsInput({ ingredients = [], onChange }: IngredientsInpu
               Clear All
             </Button>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => setShowTranslation(!showTranslation)}
@@ -124,6 +127,7 @@ export function IngredientsInput({ ingredients = [], onChange }: IngredientsInpu
               {showTranslation ? 'Hide' : 'Show'} Translation
             </Button>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => setShowAdvanced(!showAdvanced)}
@@ -146,6 +150,7 @@ export function IngredientsInput({ ingredients = [], onChange }: IngredientsInpu
               className="flex-1"
             />
             <Button
+              type="button"
               onClick={handleAddIngredient}
               disabled={!newIngredient.trim()}
             >

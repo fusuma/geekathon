@@ -226,7 +226,7 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
+      className="space-y-6 bg-gray-900"
     >
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -292,7 +292,7 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
         )}
       </AnimatePresence>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 bg-gray-900">
         {/* Product Name */}
         <Card className="bg-gray-800 border-gray-700 text-white">
           <CardHeader>

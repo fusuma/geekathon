@@ -172,17 +172,22 @@ export function AdvancedMarketSelector() {
     let newSelectedMarkets: Market[];
     if (isChecked) {
       newSelectedMarkets = [...selectedMarkets, market];
+      // If this is the first market being selected, automatically set it as primary
+      if (selectedMarkets.length === 0) {
+        setPrimaryMarket(market);
+      }
     } else {
       newSelectedMarkets = selectedMarkets.filter((m) => m !== market);
+      // If the deselected market was the primary market, set a new primary
+      if (primaryMarket === market && newSelectedMarkets.length > 0) {
+        setPrimaryMarket(newSelectedMarkets[0] || null);
+      }
     }
     setSelectedMarkets(newSelectedMarkets);
 
     // If no markets are selected, reset primary market
     if (newSelectedMarkets.length === 0) {
       setPrimaryMarket(null);
-    } else if (primaryMarket && !newSelectedMarkets.includes(primaryMarket)) {
-      // If the previous primary market is no longer selected, set a new one
-      setPrimaryMarket(newSelectedMarkets[0] || null);
     }
   }, [selectedMarkets, primaryMarket, setSelectedMarkets, setPrimaryMarket]);
 

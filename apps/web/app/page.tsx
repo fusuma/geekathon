@@ -635,6 +635,7 @@ export default function HomePage() {
             
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => setShowCrisis(true)}
                 className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2"
               >
@@ -642,6 +643,7 @@ export default function HomePage() {
               </button>
               
               <button
+                type="button"
                 onClick={() => {
                   setShowCrisis(false);
                   setCurrentStep('labels');
@@ -652,6 +654,7 @@ export default function HomePage() {
               </button>
               
               <button
+                type="button"
                 onClick={() => {
                   setShowCrisis(false);
                   setCurrentStep('form');
@@ -669,7 +672,7 @@ export default function HomePage() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-900">
         {showCrisis ? (
           <>
             {crisisStep === 'form' && (
@@ -710,7 +713,7 @@ export default function HomePage() {
         ) : (
           <>
             {currentStep === 'form' && (
-              <div className="max-w-6xl mx-auto">
+              <div className="max-w-6xl mx-auto bg-gray-900">
                 <EnhancedProductForm
                   onSubmit={handleFormSubmit}
                   isGenerating={false}
@@ -739,6 +742,7 @@ export default function HomePage() {
                   </div>
                   <div className="flex gap-3">
                     <button
+                      type="button"
                       onClick={loadExistingLabels}
                       disabled={isRefreshing}
                       className={`px-4 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 ${
@@ -752,6 +756,7 @@ export default function HomePage() {
                     
                     {labels.length > 0 && (
                     <button
+                        type="button"
                         onClick={toggleSelectMode}
                         className={`px-4 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 ${
                           isSelectMode 
@@ -774,12 +779,14 @@ export default function HomePage() {
                           {selectedLabels.size} label(s) selected
                         </span>
                         <button
+                          type="button"
                           onClick={selectAllLabels}
                           className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
                         >
                           Select All
                         </button>
                         <button
+                          type="button"
                           onClick={clearSelection}
                           className="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
                         >
@@ -789,6 +796,7 @@ export default function HomePage() {
                       
                       <div className="flex items-center gap-2">
                         <button
+                          type="button"
                           onClick={handleBulkExportJSON}
                           disabled={selectedLabels.size === 0}
                           className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
@@ -796,6 +804,7 @@ export default function HomePage() {
                           📄 Export JSON
                         </button>
                         <button
+                          type="button"
                           onClick={handleBulkExportPDF}
                           disabled={selectedLabels.size === 0}
                           className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
@@ -803,6 +812,7 @@ export default function HomePage() {
                           📄 Export PDF
                         </button>
                         <button
+                          type="button"
                           onClick={handleBulkDelete}
                           disabled={selectedLabels.size === 0}
                           className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
@@ -824,6 +834,7 @@ export default function HomePage() {
                     <h3 className="text-lg font-medium text-gray-300 mb-2">No labels yet</h3>
                     <p className="text-gray-500 mb-4">Create your first smart label to get started</p>
                     <button
+                      type="button"
                       onClick={handleGenerateNew}
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
@@ -867,6 +878,7 @@ export default function HomePage() {
                           </div>
                           <div className="flex gap-2">
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const dataStr = JSON.stringify(label, null, 2);
@@ -883,6 +895,7 @@ export default function HomePage() {
                               📄 JSON
                             </button>
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDownloadPDF(label);
@@ -892,6 +905,7 @@ export default function HomePage() {
                               📄 PDF
                             </button>
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteLabel(label.labelId!);
