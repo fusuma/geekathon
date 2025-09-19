@@ -271,6 +271,7 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
                   </Badge>
                 )}
                 <Button
+                  type="button"
                   variant="outline"
                   onClick={handleAddExampleData}
                   className="rounded-full px-3 py-1.5 text-xs font-semibold bg-gray-700 hover:bg-gray-600 text-white border-gray-600 h-auto"
@@ -280,6 +281,7 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
                   Example Data
                 </Button>
                 <Button
+                  type="button"
                   variant="outline"
                   onClick={handleReset}
                   className="rounded-full px-3 py-1.5 text-xs font-semibold bg-gray-700 hover:bg-gray-600 text-white border-gray-600 h-auto"

@@ -226,7 +226,7 @@ export function IngredientsInput({ ingredients = [], onChange }: IngredientsInpu
                   <Label htmlFor="ingredientOrder">Ingredient Order</Label>
                   <select
                     id="ingredientOrder"
-                    className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                    className="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                   >
                     <option value="descending">Descending (most to least)</option>
                     <option value="ascending">Ascending (least to most)</option>
@@ -238,16 +238,16 @@ export function IngredientsInput({ ingredients = [], onChange }: IngredientsInpu
                 <div>
                   <Label htmlFor="allergenHighlighting">Allergen Highlighting</Label>
                   <div className="mt-1 space-y-2">
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
+                    <label className="flex items-center text-gray-100">
+                      <input type="checkbox" className="mr-2 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500 focus:ring-2" />
                       Highlight common allergens
                     </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
+                    <label className="flex items-center text-gray-100">
+                      <input type="checkbox" className="mr-2 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500 focus:ring-2" />
                       Bold allergen names
                     </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
+                    <label className="flex items-center text-gray-100">
+                      <input type="checkbox" className="mr-2 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500 focus:ring-2" />
                       Add allergen warnings
                     </label>
                   </div>
@@ -257,7 +257,7 @@ export function IngredientsInput({ ingredients = [], onChange }: IngredientsInpu
                   <Label htmlFor="language">Display Language</Label>
                   <select
                     id="language"
-                    className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                    className="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                   >
                     <option value="en">English</option>
                     <option value="es">Spanish</option>
