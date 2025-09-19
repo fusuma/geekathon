@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 
 interface NutritionInputProps {
   nutrition: {
@@ -34,15 +33,18 @@ export function NutritionInput({ nutrition = {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleChange = (field: string, value: number) => {
-    onChange({
+    console.log(`NutritionInput: ${field} changed to:`, value);
+    const newNutrition = {
       ...nutrition,
       [field]: {
         per100g: {
-          value: value || 0,
+          value: isNaN(value) ? 0 : value,
           unit: field === 'energy' ? 'kcal' : 'g'
         }
       }
-    });
+    };
+    console.log(`NutritionInput: New nutrition object:`, newNutrition);
+    onChange(newNutrition);
   };
 
   const resetToZero = () => {
@@ -70,6 +72,7 @@ export function NutritionInput({ nutrition = {
       salt: { per100g: { value: 1.2, unit: 'g' } },
       fiber: { per100g: { value: 6, unit: 'g' } }
     };
+    console.log('Sample data clicked, setting nutrition to:', sampleNutrition);
     onChange(sampleNutrition);
   };
 
@@ -114,7 +117,10 @@ export function NutritionInput({ nutrition = {
                 type="number"
                 step="0.1"
                 value={nutrition.energy.per100g.value}
-                onChange={(e) => handleChange('energy', parseFloat(e.target.value))}
+                onChange={(e) => {
+                  console.log('Energy input changed:', e.target.value);
+                  handleChange('energy', parseFloat(e.target.value));
+                }}
                 className="flex-1"
               />
               <span className="text-sm text-gray-500">kcal</span>
@@ -130,7 +136,10 @@ export function NutritionInput({ nutrition = {
                 type="number"
                 step="0.1"
                 value={nutrition.protein.per100g.value}
-                onChange={(e) => handleChange('protein', parseFloat(e.target.value))}
+                onChange={(e) => {
+                  console.log('Protein input changed:', e.target.value);
+                  handleChange('protein', parseFloat(e.target.value));
+                }}
                 className="flex-1"
               />
               <span className="text-sm text-gray-500">g</span>

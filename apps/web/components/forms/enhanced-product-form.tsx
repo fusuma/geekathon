@@ -57,6 +57,12 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
     }
   );
 
+  // Debug: Log nutrition changes
+  const handleNutritionChange = (newNutrition: any) => {
+    console.log('Nutrition changed to:', newNutrition);
+    setNutrition(newNutrition);
+  };
+
   const [validation, setValidation] = useState<FormValidation>({
     isValid: false,
     errors: [],
@@ -162,6 +168,9 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
       market: primaryMarket as Market,
       nutrition,
     };
+
+    console.log('EnhancedProductForm: Data being sent:', dataToSend);
+    console.log('EnhancedProductForm: Nutrition object:', nutrition);
 
     setProductData(dataToSend);
     setHasUnsavedChanges(false);
@@ -348,7 +357,7 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
           <CardContent>
             <NutritionInput 
               nutrition={nutrition} 
-              onChange={setNutrition} 
+              onChange={handleNutritionChange} 
             />
           </CardContent>
         </Card>

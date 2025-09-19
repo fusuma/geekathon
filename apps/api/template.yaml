@@ -16,7 +16,7 @@ Globals:
         BEDROCK_REGION: !Ref AWS::Region
   Api:
     Cors:
-      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowMethods: "'GET,POST,DELETE,OPTIONS'"
       AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
       AllowOrigin: "'*'"
 
@@ -225,6 +225,43 @@ Resources:
             Path: /crisis
             Method: post
 
+  # Labels Management Lambda Function
+  LabelsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/labels.handler
+      Timeout: 15
+      MemorySize: 512
+      Description: Manage labels (GET, DELETE)
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref LabelsTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*'
+      Events:
+        LabelsApi:
+          Type: Api
+          Properties:
+            Path: /labels
+            Method: get
+        LabelsByIdApi:
+          Type: Api
+          Properties:
+            Path: /labels/{labelId}
+            Method: get
+        DeleteLabelApi:
+          Type: Api
+          Properties:
+            Path: /labels/{labelId}
+            Method: delete
+
 
 Outputs:
   ApiGatewayUrl:
@@ -244,6 +281,10 @@ Outputs:
   CrisisApi:
     Description: "API Gateway endpoint URL for Crisis function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/crisis/"
+
+  LabelsApi:
+    Description: "API Gateway endpoint URL for Labels function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/labels/"
 
   LabelsTable:
     Description: "DynamoDB table for storing labels"

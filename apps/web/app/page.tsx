@@ -97,21 +97,28 @@ export default function HomePage() {
     setCurrentStep('generating');
     
     try {
+      // Debug: Log the nutrition data being sent
+      console.log('Nutrition data being sent:', data.nutrition);
+      
+      const payload = {
+        productName: data.name, // Corrigido: usar 'name' do formulário
+        ingredients: data.ingredients,
+        nutrition: data.nutrition, // Corrigido: usar 'nutrition' em vez de 'nutritionalInfo'
+        market: data.market,
+        certifications: data.certifications || [],
+        allergens: data.allergens || [],
+        description: data.description || ''
+      };
+      
+      console.log('Full payload being sent to API:', payload);
+      
       // Call the actual API to generate the label
       const response = await fetch('https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          productName: data.name, // Corrigido: usar 'name' do formulário
-          ingredients: data.ingredients,
-          nutritionalInfo: data.nutrition,
-          market: data.market,
-          certifications: data.certifications || [],
-          allergens: data.allergens || [],
-          description: data.description || ''
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -120,6 +127,7 @@ export default function HomePage() {
 
       const result = await response.json();
       console.log('Label generated successfully:', result);
+      console.log('API Response nutrition data:', result.labelData?.legalLabel?.nutrition);
       
       // Reload labels to show the new one
       await loadExistingLabels();
@@ -234,6 +242,195 @@ export default function HomePage() {
     setCrisisStep('form');
   };
 
+  const handleDeleteLabel = async (labelId: string) => {
+    if (!confirm('Tem certeza que deseja deletar esta label?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/labels/${labelId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove the label from the local state
+        setLabels(prevLabels => prevLabels.filter(label => label.labelId !== labelId));
+        alert('Label deletada com sucesso!');
+      } else {
+        throw new Error('Erro ao deletar label');
+      }
+    } catch (error) {
+      console.error('Error deleting label:', error);
+      alert('Erro ao deletar label. Tente novamente.');
+    }
+  };
+
+  const handleDownloadPDF = async (label: any) => {
+    try {
+      // Create a simple PDF-like document using HTML and print
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('Não foi possível abrir a janela de impressão. Verifique se o popup está bloqueado.');
+        return;
+      }
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Label - ${label.productName || 'Product'}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              line-height: 1.6;
+            }
+            .header {
+              text-align: center;
+              border-bottom: 2px solid #333;
+              padding-bottom: 10px;
+              margin-bottom: 20px;
+            }
+            .section {
+              margin-bottom: 15px;
+            }
+            .section h3 {
+              color: #333;
+              border-bottom: 1px solid #ccc;
+              padding-bottom: 5px;
+            }
+            .info-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+            }
+            .info-item {
+              background: #f5f5f5;
+              padding: 8px;
+              border-radius: 4px;
+            }
+            .nutrition-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+            }
+            .nutrition-table th,
+            .nutrition-table td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: left;
+            }
+            .nutrition-table th {
+              background-color: #f2f2f2;
+            }
+            @media print {
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Smart Label - ${label.productName || 'Product'}</h1>
+            <p>Market: ${label.market || 'N/A'} | Language: ${label.language || 'EN'}</p>
+            <p>Generated: ${new Date().toLocaleDateString()}</p>
+          </div>
+
+          <div class="section">
+            <h3>Product Information</h3>
+            <div class="info-grid">
+              <div class="info-item"><strong>Product:</strong> ${label.productName || 'N/A'}</div>
+              <div class="info-item"><strong>Market:</strong> ${label.market || 'N/A'}</div>
+              <div class="info-item"><strong>Language:</strong> ${label.language || 'N/A'}</div>
+              <div class="info-item"><strong>Created:</strong> ${label.createdAt ? new Date(label.createdAt).toLocaleDateString() : 'N/A'}</div>
+            </div>
+          </div>
+
+          ${label.labelData?.legalLabel ? `
+          <div class="section">
+            <h3>Legal Label Information</h3>
+            ${label.labelData.legalLabel.ingredients ? `<p><strong>Ingredients:</strong> ${label.labelData.legalLabel.ingredients}</p>` : ''}
+            ${label.labelData.legalLabel.allergens ? `<p><strong>Allergens:</strong> ${label.labelData.legalLabel.allergens}</p>` : ''}
+            
+            ${label.labelData.legalLabel.nutrition ? `
+            <h4>Nutrition Information</h4>
+            <table class="nutrition-table">
+              <thead>
+                <tr><th>Nutrient</th><th>Value</th></tr>
+              </thead>
+              <tbody>
+                ${Object.entries(label.labelData.legalLabel.nutrition).map(([key, value]) => {
+                  // Handle nested nutrition structure (e.g., {per100g: {value: 50, unit: "g"}})
+                  let displayValue: string = '';
+                  
+                  if (typeof value === 'object' && value !== null) {
+                    const objValue = value as any;
+                    
+                    // Check for nested structure like {per100g: {value: 50, unit: "g"}}
+                    if (objValue.per100g && typeof objValue.per100g === 'object') {
+                      const per100g = objValue.per100g;
+                      if (per100g.value !== undefined && per100g.unit !== undefined) {
+                        displayValue = `${per100g.value}${per100g.unit}`;
+                      } else if (per100g.value !== undefined) {
+                        displayValue = String(per100g.value);
+                      } else {
+                        displayValue = JSON.stringify(per100g);
+                      }
+                    }
+                    // Check for direct value/unit structure
+                    else if (objValue.value !== undefined && objValue.unit !== undefined) {
+                      displayValue = `${objValue.value}${objValue.unit}`;
+                    } else if (objValue.value !== undefined) {
+                      displayValue = String(objValue.value);
+                    } else if (objValue.amount !== undefined) {
+                      displayValue = String(objValue.amount);
+                    } else {
+                      displayValue = JSON.stringify(value);
+                    }
+                  } else {
+                    displayValue = String(value);
+                  }
+                  
+                  return `<tr><td>${key}</td><td>${displayValue}</td></tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+            ` : ''}
+          </div>
+          ` : ''}
+
+          ${label.labelData?.marketing ? `
+          <div class="section">
+            <h3>Marketing Information</h3>
+            ${label.labelData.marketing.short ? `<p><strong>Short Description:</strong> ${label.labelData.marketing.short}</p>` : ''}
+            ${label.labelData.marketing.long ? `<p><strong>Long Description:</strong> ${label.labelData.marketing.long}</p>` : ''}
+            ${label.labelData.marketing.claims ? `<p><strong>Claims:</strong> ${label.labelData.marketing.claims}</p>` : ''}
+          </div>
+          ` : ''}
+
+          <div class="no-print" style="margin-top: 30px; text-align: center;">
+            <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+              🖨️ Print as PDF
+            </button>
+          </div>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      // Auto-print after a short delay
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Erro ao gerar PDF. Tente novamente.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}
@@ -296,12 +493,12 @@ export default function HomePage() {
             )}
             
             {crisisStep === 'analyzing' && (
-              <div className="max-w-4xl mx-auto">
-                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-8">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-400 mx-auto mb-6"></div>
                     <h2 className="text-2xl font-bold text-red-400 mb-4">Analyzing Crisis Situation</h2>
-                    <p className="text-gray-300 mb-6">
+              <p className="text-gray-300 mb-6">
                       Our AI is analyzing the crisis data and generating a comprehensive response plan...
                     </p>
                     <div className="space-y-2 text-sm text-gray-400">
@@ -311,8 +508,8 @@ export default function HomePage() {
                       <div>⏳ Preparing communication strategies</div>
                     </div>
                   </div>
-                </div>
-              </div>
+            </div>
+          </div>
             )}
             
             {crisisStep === 'results' && crisisAnalysis && (
@@ -420,7 +617,19 @@ export default function HomePage() {
                               }}
                               className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 rounded transition-colors"
                             >
-                              📄 Download JSON
+                              📄 JSON
+                            </button>
+                            <button
+                              onClick={() => handleDownloadPDF(label)}
+                              className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 rounded transition-colors"
+                            >
+                              📄 PDF
+                            </button>
+                            <button
+                              onClick={() => handleDeleteLabel(label.labelId!)}
+                              className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 rounded transition-colors"
+                            >
+                              🗑️ Delete
                             </button>
                           </div>
                         </div>
@@ -439,11 +648,49 @@ export default function HomePage() {
                               {label.labelData?.legalLabel?.nutrition ? (
                                 typeof label.labelData.legalLabel.nutrition === 'object' ? (
                                   <div className="ml-2 mt-1 space-y-1">
-                                    {Object.entries(label.labelData.legalLabel.nutrition).map(([key, value]) => (
-                                      <div key={key} className="text-sm">
-                                        <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span> {String(value)}
-                                      </div>
-                                    ))}
+                                    {Object.entries(label.labelData.legalLabel.nutrition).map(([key, value]) => {
+                                      // Debug: Log the nutrition data structure
+                                      console.log(`Nutrition display - Key: ${key}, Value:`, value);
+                                      
+                                      // Handle nested nutrition structure (e.g., {per100g: {value: 50, unit: "g"}})
+                                      let displayValue: string = '';
+                                      
+                                      if (typeof value === 'object' && value !== null) {
+                                        const objValue = value as any;
+                                        
+                                        // Check for nested structure like {per100g: {value: 50, unit: "g"}}
+                                        if (objValue.per100g && typeof objValue.per100g === 'object') {
+                                          const per100g = objValue.per100g;
+                                          if (per100g.value !== undefined && per100g.unit !== undefined) {
+                                            displayValue = `${per100g.value}${per100g.unit}`;
+                                          } else if (per100g.value !== undefined) {
+                                            displayValue = String(per100g.value);
+                                          } else {
+                                            displayValue = JSON.stringify(per100g);
+                                          }
+                                        }
+                                        // Check for direct value/unit structure
+                                        else if (objValue.value !== undefined && objValue.unit !== undefined) {
+                                          displayValue = `${objValue.value}${objValue.unit}`;
+                                        } else if (objValue.value !== undefined) {
+                                          displayValue = String(objValue.value);
+                                        } else if (objValue.amount !== undefined) {
+                                          displayValue = String(objValue.amount);
+                                        } else if (objValue.text !== undefined) {
+                                          displayValue = objValue.text;
+                                        } else {
+                                          displayValue = JSON.stringify(value);
+                                        }
+                                      } else {
+                                        displayValue = String(value);
+                                      }
+                                      
+                                      return (
+                                        <div key={key} className="text-sm">
+                                          <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span> {displayValue}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 ) : (
                                   <span className="ml-2">{label.labelData.legalLabel.nutrition}</span>
