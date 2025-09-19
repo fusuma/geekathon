@@ -236,6 +236,7 @@ export const handler = async (
     const labelId = generateLabelId();
     const label: Label = {
       labelId,
+      productName: productData.productName,
       productId: productData.productId,
       market: productData.market,
       language: generationResult.language,
