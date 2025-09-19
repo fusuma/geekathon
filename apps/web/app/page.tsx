@@ -71,24 +71,206 @@ export default function HomePage() {
   const [productData, setProductData] = useState<any>(null);
   const [crisisData, setCrisisData] = useState<CrisisFormData | null>(null);
   const [crisisAnalysis, setCrisisAnalysis] = useState<CrisisAnalysis | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Multi-select states
+  const [selectedLabels, setSelectedLabels] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   // Load existing labels on mount
   useEffect(() => {
     loadExistingLabels();
   }, []);
 
+  // Multi-select functions
+  const toggleLabelSelection = (labelId: string) => {
+    setSelectedLabels(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(labelId)) {
+        newSet.delete(labelId);
+      } else {
+        newSet.add(labelId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllLabels = () => {
+    setSelectedLabels(new Set(labels.map(label => label.labelId!)));
+  };
+
+  const clearSelection = () => {
+    setSelectedLabels(new Set());
+  };
+
+  const toggleSelectMode = () => {
+    setIsSelectMode(!isSelectMode);
+    if (isSelectMode) {
+      clearSelection();
+    }
+  };
+
+  // Bulk operations
+  const handleBulkDelete = async () => {
+    if (selectedLabels.size === 0) return;
+    
+    if (!confirm(`Tem certeza que deseja deletar ${selectedLabels.size} label(s)?`)) {
+      return;
+    }
+
+    try {
+      const deletePromises = Array.from(selectedLabels).map(labelId =>
+        fetch(`https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/labels/${labelId}`, {
+          method: 'DELETE',
+        })
+      );
+
+      const results = await Promise.allSettled(deletePromises);
+      const successful = results.filter(result => result.status === 'fulfilled' && result.value.ok).length;
+      
+      if (successful > 0) {
+        // Remove deleted labels from local state
+        setLabels(prevLabels => prevLabels.filter(label => !selectedLabels.has(label.labelId!)));
+        clearSelection();
+        alert(`${successful} label(s) deletada(s) com sucesso!`);
+      } else {
+        alert('Erro ao deletar labels. Tente novamente.');
+      }
+    } catch (error) {
+      console.error('Error deleting labels:', error);
+      alert('Erro ao deletar labels. Tente novamente.');
+    }
+  };
+
+  const handleBulkExportJSON = () => {
+    if (selectedLabels.size === 0) return;
+    
+    const selectedLabelsData = labels.filter(label => selectedLabels.has(label.labelId!));
+    const dataStr = JSON.stringify(selectedLabelsData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `labels_bulk_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleBulkExportPDF = () => {
+    if (selectedLabels.size === 0) return;
+    
+    const selectedLabelsData = labels.filter(label => selectedLabels.has(label.labelId!));
+    
+    // Create HTML content for all selected labels
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Labels Export</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .label { page-break-after: always; margin-bottom: 30px; padding: 20px; border: 1px solid #ccc; }
+          .label:last-child { page-break-after: avoid; }
+          .header { background: #f5f5f5; padding: 10px; margin-bottom: 15px; }
+          .section { margin-bottom: 15px; }
+          .section h3 { color: #333; margin-bottom: 10px; }
+          .info-item { margin-bottom: 5px; }
+          .nutrition-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          .nutrition-table th, .nutrition-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .nutrition-table th { background-color: #f2f2f2; }
+        </style>
+      </head>
+      <body>
+        <h1>Labels Export - ${selectedLabelsData.length} Labels</h1>
+        ${selectedLabelsData.map((label, index) => `
+          <div class="label">
+            <div class="header">
+              <h2>Label ${index + 1}: ${label.productName || 'Unknown Product'}</h2>
+              <div class="info-item"><strong>Market:</strong> ${label.market}</div>
+              <div class="info-item"><strong>Language:</strong> ${label.language}</div>
+              <div class="info-item"><strong>Created:</strong> ${label.createdAt ? new Date(label.createdAt).toLocaleString() : 'N/A'}</div>
+            </div>
+            
+            <div class="section">
+              <h3>Legal Label</h3>
+              <div class="info-item"><strong>Ingredients:</strong> ${label.labelData?.legalLabel?.ingredients || 'N/A'}</div>
+              <div class="info-item"><strong>Allergens:</strong> ${label.labelData?.legalLabel?.allergens || 'None specified'}</div>
+              <div class="info-item"><strong>Nutrition:</strong></div>
+              ${label.labelData?.legalLabel?.nutrition ? (
+                typeof label.labelData.legalLabel.nutrition === 'object' ? 
+                  Object.entries(label.labelData.legalLabel.nutrition).map(([key, value]: [string, any]) => {
+                    let displayValue = '';
+                    if (value && typeof value === 'object') {
+                      if (value.per100g && value.per100g.value !== undefined && value.per100g.unit) {
+                        displayValue = `${value.per100g.value}${value.per100g.unit}`;
+                      } else if (value.value !== undefined && value.unit) {
+                        displayValue = `${value.value}${value.unit}`;
+                      } else if (value.amount !== undefined) {
+                        displayValue = String(value.amount);
+                      } else if (value.text) {
+                        displayValue = String(value.text);
+                      } else {
+                        displayValue = JSON.stringify(value);
+                      }
+                    } else {
+                      displayValue = String(value);
+                    }
+                    return `<div class="info-item"><strong>${key}:</strong> ${displayValue}</div>`;
+                  }).join('') :
+                  `<div class="info-item">${label.labelData.legalLabel.nutrition}</div>`
+              ) : '<div class="info-item">N/A</div>'}
+            </div>
+            
+            <div class="section">
+              <h3>Marketing</h3>
+              <div class="info-item"><strong>Short:</strong> ${label.labelData?.marketing?.short || 'N/A'}</div>
+              <div class="info-item"><strong>Long:</strong> ${label.labelData?.marketing?.long || 'N/A'}</div>
+              <div class="info-item"><strong>Claims:</strong> ${label.labelData?.marketing?.claims || 'N/A'}</div>
+            </div>
+          </div>
+        `).join('')}
+      </body>
+      </html>
+    `;
+
+    // Create and download PDF
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
+  };
+
   // Load existing labels from API
   const loadExistingLabels = async () => {
     try {
+      setIsRefreshing(true);
+      console.log('Refreshing labels...');
       const response = await fetch('https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/labels');
       if (response.ok) {
         const data = await response.json();
+        console.log('Labels refreshed:', data);
         if (data.success && data.data) {
-          setLabels(data.data);
+          // Sort labels by creation date (newest first)
+          const sortedLabels = data.data.sort((a: any, b: any) => {
+            const dateA = new Date(a.createdAt || 0);
+            const dateB = new Date(b.createdAt || 0);
+            return dateB.getTime() - dateA.getTime();
+          });
+          setLabels(sortedLabels);
+          console.log('Labels updated in state:', sortedLabels.length, 'labels');
         }
+      } else {
+        console.error('Failed to fetch labels:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error loading labels:', error);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -127,7 +309,6 @@ export default function HomePage() {
 
       const result = await response.json();
       console.log('Label generated successfully:', result);
-      console.log('API Response nutrition data:', result.labelData?.legalLabel?.nutrition);
       
       // Reload labels to show the new one
       await loadExistingLabels();
@@ -342,7 +523,7 @@ export default function HomePage() {
               <div class="info-item"><strong>Product:</strong> ${label.productName || 'N/A'}</div>
               <div class="info-item"><strong>Market:</strong> ${label.market || 'N/A'}</div>
               <div class="info-item"><strong>Language:</strong> ${label.language || 'N/A'}</div>
-              <div class="info-item"><strong>Created:</strong> ${label.createdAt ? new Date(label.createdAt).toLocaleDateString() : 'N/A'}</div>
+              <div class="info-item"><strong>Created:</strong> ${label.createdAt ? new Date(label.createdAt).toLocaleString() : 'N/A'}</div>
             </div>
           </div>
 
@@ -553,18 +734,79 @@ export default function HomePage() {
                   <div className="flex gap-3">
                     <button
                       onClick={loadExistingLabels}
-                      className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2"
+                      disabled={isRefreshing}
+                      className={`px-4 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 ${
+                        isRefreshing 
+                          ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                          : 'bg-gray-700 hover:bg-gray-600 text-white'
+                      }`}
                     >
-                      🔄 Refresh
+                      {isRefreshing ? '⏳ Refreshing...' : '🔄 Refresh'}
                     </button>
+                    
+                    {labels.length > 0 && (
                     <button
-                      onClick={handleGenerateNew}
-                      className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      + Create New Label
+                        onClick={toggleSelectMode}
+                        className={`px-4 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 ${
+                          isSelectMode 
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                        }`}
+                      >
+                        {isSelectMode ? '✅ Cancel Selection' : '☑️ Select Multiple'}
                     </button>
+                    )}
                   </div>
                 </div>
+                
+                {/* Bulk Operations Bar */}
+                {isSelectMode && labels.length > 0 && (
+                  <div className="mb-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <span className="text-blue-300 font-medium">
+                          {selectedLabels.size} label(s) selected
+                        </span>
+                        <button
+                          onClick={selectAllLabels}
+                          className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          onClick={clearSelection}
+                          className="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
+                        >
+                          Clear Selection
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleBulkExportJSON}
+                          disabled={selectedLabels.size === 0}
+                          className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
+                        >
+                          📄 Export JSON
+                        </button>
+                        <button
+                          onClick={handleBulkExportPDF}
+                          disabled={selectedLabels.size === 0}
+                          className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
+                        >
+                          📄 Export PDF
+                        </button>
+                        <button
+                          onClick={handleBulkDelete}
+                          disabled={selectedLabels.size === 0}
+                          className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
+                        >
+                          🗑️ Delete Selected
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {labels.length === 0 ? (
                   <div className="text-center py-12">
@@ -585,8 +827,22 @@ export default function HomePage() {
                 ) : (
                   <div className="grid gap-6">
                     {labels.map((label, index) => (
-                      <div key={label.labelId || index} className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:bg-gray-750 transition-colors">
+                      <div key={label.labelId || index} className={`bg-gray-800 border rounded-lg p-6 hover:bg-gray-750 transition-colors ${
+                        isSelectMode && selectedLabels.has(label.labelId!) 
+                          ? 'border-blue-500 bg-blue-900/20' 
+                          : 'border-gray-700'
+                      }`}>
                         <div className="flex items-center justify-between mb-4">
+                          {isSelectMode && (
+                            <div className="flex items-center mr-4">
+                              <input
+                                type="checkbox"
+                                checked={selectedLabels.has(label.labelId!)}
+                                onChange={() => toggleLabelSelection(label.labelId!)}
+                                className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                              />
+                            </div>
+                          )}
                           <div>
                             <h3 className="text-xl font-semibold text-white mb-1">
                               {label.productName || 'Unknown Product'}
@@ -596,7 +852,7 @@ export default function HomePage() {
                                 🌍 {label.market}
                               </span>
                               <span className="flex items-center gap-1">
-                                📅 {label.createdAt ? new Date(label.createdAt).toLocaleDateString() : 'N/A'}
+                                📅 {label.createdAt ? new Date(label.createdAt).toLocaleString() : 'N/A'}
                               </span>
                               <span className="flex items-center gap-1">
                                 🏷️ {label.language?.toUpperCase() || 'EN'}
@@ -605,7 +861,8 @@ export default function HomePage() {
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 const dataStr = JSON.stringify(label, null, 2);
                                 const dataBlob = new Blob([dataStr], { type: 'application/json' });
                                 const url = URL.createObjectURL(dataBlob);
@@ -620,13 +877,19 @@ export default function HomePage() {
                               📄 JSON
                             </button>
                             <button
-                              onClick={() => handleDownloadPDF(label)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadPDF(label);
+                              }}
                               className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 rounded transition-colors"
                             >
                               📄 PDF
                             </button>
                             <button
-                              onClick={() => handleDeleteLabel(label.labelId!)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteLabel(label.labelId!);
+                              }}
                               className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 rounded transition-colors"
                             >
                               🗑️ Delete

@@ -95,9 +95,7 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
     if (selectedMarkets.length === 0) {
       errors.push('Please select at least one target market');
     }
-    if (!primaryMarket) {
-      errors.push('Please set a primary market');
-    }
+    // Note: We'll use a fallback market if primaryMarket is not set
 
     // Nutrition validation
     const hasNutritionData = Object.values(nutrition).some(nutrient => 
@@ -123,7 +121,7 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
       errors,
       warnings,
     };
-  }, [name, ingredients, nutrition, selectedMarkets, primaryMarket]);
+  }, [name, ingredients, nutrition, selectedMarkets]);
 
   // Update validation when form data changes
   useEffect(() => {
@@ -162,10 +160,13 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
       return;
     }
 
+    // Ensure we have a primary market - if not, use the first selected market or default to US
+    const marketToUse = primaryMarket || selectedMarkets[0] || 'US';
+
     const dataToSend: ProductData = {
       name: name.trim(),
       ingredients,
-      market: primaryMarket as Market,
+      market: marketToUse as Market,
       nutrition,
     };
 
