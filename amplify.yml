@@ -12,13 +12,13 @@ applications:
           commands:
             - echo "Building the application..."
             - pnpm build
+            - echo "Copying static files for standalone deployment..."
+            - cp -r apps/web/public .next/standalone/apps/web/
+            - cp -r .next/static .next/standalone/apps/web/.next/
       artifacts:
-        baseDirectory: apps/web
+        baseDirectory: .next/standalone
         files:
-          - '.next/**/*'
-          - 'public/**/*'
-          - 'package.json'
-          - 'next.config.js'
+          - '**/*'
       cache:
         paths:
           - node_modules/**/*
