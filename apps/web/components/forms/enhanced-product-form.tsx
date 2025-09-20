@@ -8,22 +8,33 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Package, 
-  Globe, 
-  ChefHat, 
-  Activity, 
-  CheckCircle, 
-  AlertTriangle, 
+import {
+  Package,
+  Globe,
+  ChefHat,
+  Activity,
+  CheckCircle,
+  AlertTriangle,
   Info,
   Save,
   RotateCcw,
-  Zap
+  Zap,
+  Drumstick,
+  Wheat,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IngredientsInput } from './ingredients-input';
 import { NutritionInput } from './nutrition-input';
 import { AdvancedMarketSelector } from './advanced-market-selector';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+
 // import type { Market } from '@repo/shared';
 
 type Market = 'US' | 'UK' | 'ES' | 'AO' | 'MO' | 'BR' | 'AE';
@@ -39,22 +50,85 @@ interface FormValidation {
   warnings: string[];
 }
 
+type ExamplePreset = {
+  id: string;
+  label: string;
+  name: string;
+  ingredients?: string[];
+  nutrition?: ProductData['nutrition'] | null;
+};
+
+const ZERO_NUTRITION: ProductData['nutrition'] = {
+  energy: { per100g: { value: 0, unit: 'kcal' } },
+  fat: { per100g: { value: 0, unit: 'g' } },
+  saturatedFat: { per100g: { value: 0, unit: 'g' } },
+  carbohydrates: { per100g: { value: 0, unit: 'g' } },
+  sugars: { per100g: { value: 0, unit: 'g' } },
+  protein: { per100g: { value: 0, unit: 'g' } },
+  salt: { per100g: { value: 0, unit: 'g' } },
+  fiber: { per100g: { value: 0, unit: 'g' } },
+};
+
+const EXAMPLE_PRESETS: ExamplePreset[] = [
+  {
+    id: 'chicken-orange',
+    label: 'COXA DE FRANGO C/P S/O LARANJA E PAPRIKA CF',
+    name: 'COXA DE FRANGO C/P S/O LARANJA E PAPRIKA CF',
+    ingredients: [
+      'Carne de Frango (90%)',
+      'sumo de laranja (3,5%)',
+      'sumo de Limão',
+      'água',
+      'alho',
+      'azeite',
+      'sal',
+      'paprika fumada (0,3%)',
+      'Louro',
+    ],
+    nutrition: {
+      energy: { per100g: { value: 250, unit: 'kcal' } },
+      fat: { per100g: { value: 3.5, unit: 'g' } },
+      saturatedFat: { per100g: { value: 0.5, unit: 'g' } },
+      carbohydrates: { per100g: { value: 45, unit: 'g' } },
+      sugars: { per100g: { value: 2, unit: 'g' } },
+      protein: { per100g: { value: 8, unit: 'g' } },
+      salt: { per100g: { value: 1.2, unit: 'g' } },
+      fiber: { per100g: { value: 6, unit: 'g' } },
+    },
+  },
+  {
+    id: 'gluten-free-panado',
+    label: 'PANADO SEM GLUTEN',
+    name: 'PANADO SEM GLUTEN',
+    ingredients: [
+      'Peito de Frango',
+      'farinha de milho (sem glúten)',
+      'água',
+      'sal',
+      'alho em pó',
+      'pimenta',
+      'azeite',
+    ],
+    nutrition: {
+      energy: { per100g: { value: 230, unit: 'kcal' } },
+      fat: { per100g: { value: 2.5, unit: 'g' } },
+      saturatedFat: { per100g: { value: 0.4, unit: 'g' } },
+      carbohydrates: { per100g: { value: 43, unit: 'g' } },
+      sugars: { per100g: { value: 4, unit: 'g' } },
+      protein: { per100g: { value: 9, unit: 'g' } },
+      salt: { per100g: { value: 0.9, unit: 'g' } },
+      fiber: { per100g: { value: 7, unit: 'g' } },
+    },
+  },
+];
+
 export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductFormProps) {
   const { productData, selectedMarkets, primaryMarket, setProductData, resetForm } = useAppStore();
 
   const [name, setName] = useState(productData?.name || '');
   const [ingredients, setIngredients] = useState<string[]>(productData?.ingredients || []);
   const [nutrition, setNutrition] = useState<ProductData['nutrition']>(
-    productData?.nutrition || {
-      energy: { per100g: { value: 0, unit: 'kcal' } },
-      fat: { per100g: { value: 0, unit: 'g' } },
-      saturatedFat: { per100g: { value: 0, unit: 'g' } },
-      carbohydrates: { per100g: { value: 0, unit: 'g' } },
-      sugars: { per100g: { value: 0, unit: 'g' } },
-      protein: { per100g: { value: 0, unit: 'g' } },
-      salt: { per100g: { value: 0, unit: 'g' } },
-      fiber: { per100g: { value: 0, unit: 'g' } },
-    }
+    productData?.nutrition || ZERO_NUTRITION
   );
 
   // Debug: Log nutrition changes
@@ -95,22 +169,17 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
     if (selectedMarkets.length === 0) {
       errors.push('Please select at least one target market');
     }
-    // Note: We'll use a fallback market if primaryMarket is not set
 
     // Nutrition validation
-    const hasNutritionData = Object.values(nutrition).some(nutrient => 
-      nutrient.per100g.value > 0
-    );
+    const hasNutritionData = Object.values(nutrition).some((nutrient) => nutrient.per100g.value > 0);
     if (!hasNutritionData) {
       warnings.push('Nutritional information is recommended for better compliance');
     }
 
     // Check for common allergens
     const commonAllergens = ['milk', 'soy', 'gluten', 'wheat', 'nuts', 'peanuts', 'eggs', 'fish', 'shellfish'];
-    const hasAllergens = ingredients.some(ingredient => 
-      commonAllergens.some(allergen => 
-        ingredient.toLowerCase().includes(allergen)
-      )
+    const hasAllergens = ingredients.some((ingredient) =>
+      commonAllergens.some((allergen) => ingredient.toLowerCase().includes(allergen))
     );
     if (hasAllergens) {
       warnings.push('Allergens detected - ensure proper labeling requirements');
@@ -135,16 +204,7 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
     if (!productData) {
       setName('');
       setIngredients([]);
-      setNutrition({
-        energy: { per100g: { value: 0, unit: 'kcal' } },
-        fat: { per100g: { value: 0, unit: 'g' } },
-        saturatedFat: { per100g: { value: 0, unit: 'g' } },
-        carbohydrates: { per100g: { value: 0, unit: 'g' } },
-        sugars: { per100g: { value: 0, unit: 'g' } },
-        protein: { per100g: { value: 0, unit: 'g' } },
-        salt: { per100g: { value: 0, unit: 'g' } },
-        fiber: { per100g: { value: 0, unit: 'g' } },
-      });
+      setNutrition(ZERO_NUTRITION);
       setShowValidation(false);
       setHasUnsavedChanges(false);
     }
@@ -152,7 +212,7 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const validationResult = validateForm();
     setShowValidation(true);
 
@@ -182,53 +242,25 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
     resetForm(); // Use store reset function to also reset markets
     setName('');
     setIngredients([]);
-    setNutrition({
-      energy: { per100g: { value: 0, unit: 'kcal' } },
-      fat: { per100g: { value: 0, unit: 'g' } },
-      saturatedFat: { per100g: { value: 0, unit: 'g' } },
-      carbohydrates: { per100g: { value: 0, unit: 'g' } },
-      sugars: { per100g: { value: 0, unit: 'g' } },
-      protein: { per100g: { value: 0, unit: 'g' } },
-      salt: { per100g: { value: 0, unit: 'g' } },
-      fiber: { per100g: { value: 0, unit: 'g' } },
-    });
+    setNutrition(ZERO_NUTRITION);
     setShowValidation(false);
     setHasUnsavedChanges(false);
   };
 
-  const handleAddExampleData = () => {
-    setName('Organic Whole Wheat Bread');
-    setIngredients([
-      'Whole wheat flour',
-      'Water',
-      'Sea salt',
-      'Organic yeast',
-      'Olive oil',
-      'Sugar',
-      'Milk powder (allergen)',
-      'Soy lecithin (allergen)',
-    ]);
-    setNutrition({
-      energy: { per100g: { value: 250, unit: 'kcal' } },
-      fat: { per100g: { value: 3.5, unit: 'g' } },
-      saturatedFat: { per100g: { value: 0.5, unit: 'g' } },
-      carbohydrates: { per100g: { value: 45, unit: 'g' } },
-      sugars: { per100g: { value: 2, unit: 'g' } },
-      protein: { per100g: { value: 8, unit: 'g' } },
-      salt: { per100g: { value: 1.2, unit: 'g' } },
-      fiber: { per100g: { value: 6, unit: 'g' } },
-    });
-    setShowValidation(false);
+  // -------- Dropdown Example Presets --------
+  const examplePresets = EXAMPLE_PRESETS;
+
+  function applyExamplePreset(preset: ExamplePreset) {
+    setName(preset.name);
+    setIngredients(preset.ingredients ?? []);
+    setNutrition(preset.nutrition ?? ZERO_NUTRITION);
     setHasUnsavedChanges(true);
-  };
+    setShowValidation(false);
+  }
+  // ------------------------------------------
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6 bg-gray-900"
-    >
-
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 bg-gray-900">
       {/* Validation Alerts */}
       <AnimatePresence>
         {showValidation && (validation.errors.length > 0 || validation.warnings.length > 0) && (
@@ -270,16 +302,93 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
                     Unsaved Changes
                   </Badge>
                 )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleAddExampleData}
-                  className="rounded-full px-3 py-1.5 text-xs font-semibold bg-gray-700 hover:bg-gray-600 text-white border-gray-600 h-auto"
-                  disabled={isGenerating}
-                >
-                  <Zap className="h-3 w-3 mr-1" />
-                  Example Data
-                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-full px-3 py-1.5 text-xs font-semibold bg-gray-700 hover:bg-gray-600 text-white border-gray-600 h-auto"
+                      disabled={isGenerating}
+                    >
+                      <Zap className="h-3 w-3 mr-1" />
+                      Example Data
+                    </Button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-[26rem] p-0 bg-gray-900/95 backdrop-blur border-gray-700 rounded-xl shadow-2xl overflow-hidden"
+                  >                    
+                    {examplePresets.length === 0 && (
+                      <DropdownMenuItem disabled className="text-xs opacity-70">
+                        No presets found
+                      </DropdownMenuItem>
+                    )}
+
+                    {examplePresets.map((preset: ExamplePreset) => {
+                      const isChicken = /frango|chicken|coxa/i.test(preset.label);
+                      const Icon = isChicken ? Drumstick : Wheat;
+                      const tags = isChicken ? ['Frango', 'C/P', 'S/O', 'Paprika'] : ['Sem glúten', 'Panado'];
+
+                      return (
+                        <DropdownMenuItem
+                          key={preset.id}
+                          onSelect={() => {
+                            if (isGenerating) return;
+                            applyExamplePreset(preset); // fecha automático
+                          }}
+                          className="
+                            group p-0 cursor-pointer
+                            data-[highlighted]:bg-gradient-to-r
+                            data-[highlighted]:from-blue-600/15
+                            data-[highlighted]:to-indigo-600/15
+                          "
+                        >
+                          <div className="flex w-full items-center gap-3 px-3 py-3">
+                            <div
+                              className="
+                                flex h-10 w-10 items-center justify-center
+                                rounded-lg ring-1 ring-inset
+                                bg-gradient-to-br
+                                from-gray-700/60 to-gray-700/30
+                                ring-gray-600/60
+                                group-data-[highlighted]:from-blue-700/40
+                                group-data-[highlighted]:to-indigo-700/30
+                                group-data-[highlighted]:ring-blue-500/50
+                                transition-colors
+                              "
+                            >
+                              <Icon className="h-5 w-5" />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-sm text-white truncate">{preset.label}</div>
+                              <div className="mt-1 flex flex-wrap gap-1.5">
+                                {tags.map((t) => (
+                                  <span
+                                    key={t}
+                                    className="
+                                      text-[10px] leading-4 px-2 py-0.5
+                                      rounded-full border
+                                      bg-gray-800/70 border-gray-700/70 text-gray-200
+                                      group-data-[highlighted]:bg-blue-900/30
+                                      group-data-[highlighted]:border-blue-700/40
+                                      uppercase tracking-wide
+                                    "
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Button
                   type="button"
                   variant="outline"
@@ -302,13 +411,11 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
                 name="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Organic Whole Wheat Bread"
+                placeholder="Insert Product Name"
                 className="mt-2 bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
                 required
               />
-              <p className="text-xs text-gray-400 mt-1">
-                Enter a clear, descriptive name for your product
-              </p>
+              <p className="text-xs text-gray-400 mt-1">Enter a clear, descriptive name for your product</p>
             </div>
           </CardContent>
         </Card>
@@ -323,15 +430,10 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
               <ChefHat className="h-5 w-5" />
               Ingredients & Allergens
             </CardTitle>
-            <p className="text-gray-400 text-sm">
-              List all ingredients in order of quantity (highest first)
-            </p>
+            <p className="text-gray-400 text-sm">List all ingredients in order of quantity (highest first)</p>
           </CardHeader>
           <CardContent>
-            <IngredientsInput 
-              ingredients={ingredients} 
-              onChange={setIngredients} 
-            />
+            <IngredientsInput ingredients={ingredients} onChange={setIngredients} />
           </CardContent>
         </Card>
 
@@ -342,15 +444,10 @@ export function EnhancedProductForm({ onSubmit, isGenerating }: EnhancedProductF
               <Activity className="h-5 w-5" />
               Nutritional Information
             </CardTitle>
-            <p className="text-gray-400 text-sm">
-              Provide nutritional values per 100g/ml for accurate labeling
-            </p>
+            <p className="text-gray-400 text-sm">Provide nutritional values per 100g/ml for accurate labeling</p>
           </CardHeader>
           <CardContent>
-            <NutritionInput 
-              nutrition={nutrition} 
-              onChange={handleNutritionChange} 
-            />
+            <NutritionInput nutrition={nutrition} onChange={handleNutritionChange} />
           </CardContent>
         </Card>
 

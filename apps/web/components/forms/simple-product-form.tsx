@@ -82,7 +82,7 @@ export function SimpleProductForm({ onSubmit, isGenerating }: SimpleProductFormP
               id="name"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="e.g., Organic Whole Wheat Bread"
+              placeholder="Insert Product Name"
               required
               className="bg-gray-800 border-gray-600 text-gray-100"
             />
