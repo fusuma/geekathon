@@ -21,13 +21,42 @@ export function VisualLabelModal({ isOpen, onClose, labelData }: VisualLabelModa
   const nutritionData = legalLabel?.nutrition as Record<string, unknown> || {};
   const energyData = nutritionData.energy as Record<string, unknown>;
   
+  // Try to get data from backend structure first (flat), then fall back to nested structure
   const productName = (labelDataTyped.productName as string) || (labelDataNested?.productName as string) || 'Product Name';
   const servingSize = (labelDataTyped.servingSize as string) || (labelDataNested?.servingSize as string) || '1 serving';
   const servingsPerContainer = (labelDataTyped.servingsPerContainer as string) || (labelDataNested?.servingsPerContainer as string) || '1';
-  const calories = (energyData?.per100g as Record<string, unknown>)?.value ? `${(energyData.per100g as Record<string, unknown>).value} ${(energyData.per100g as Record<string, unknown>).unit || 'kcal'}` : '0 kcal';
   
-  const nutritionalValues = nutritionData;
-  const ingredients = legalLabel?.ingredients as string || 'Ingredients not specified';
+  // Handle calories - try backend structure first, then nested structure
+  let calories = '0 kcal';
+  if (labelDataTyped.calories) {
+    calories = `${labelDataTyped.calories} kcal`;
+  } else if (energyData?.per100g) {
+    const per100g = energyData.per100g as Record<string, unknown>;
+    calories = `${per100g.value || 0} ${per100g.unit || 'kcal'}`;
+  }
+  
+  // Handle nutritional values - try backend structure first, then nested structure
+  let nutritionalValues: Record<string, unknown> = {};
+  if (labelDataTyped.nutrition_facts) {
+    const nutritionFacts = labelDataTyped.nutrition_facts as Record<string, unknown>;
+    if (nutritionFacts.nutrients && Array.isArray(nutritionFacts.nutrients)) {
+      // Convert backend nutrients array to object format
+      nutritionalValues = {};
+      (nutritionFacts.nutrients as Array<{name: string, amount: string, unit: string}>).forEach(nutrient => {
+        nutritionalValues[nutrient.name] = {
+          per100g: {
+            value: parseFloat(nutrient.amount) || 0,
+            unit: nutrient.unit
+          }
+        };
+      });
+    }
+  } else {
+    nutritionalValues = nutritionData;
+  }
+  
+  // Handle ingredients - try backend structure first, then nested structure
+  const ingredients = (labelDataTyped.ingredients as string) || (legalLabel?.ingredients as string) || 'Ingredients not specified';
   const market = (labelDataTyped.market as string) || 'spain';
   const certifications = (labelDataTyped.marketSpecificData as Record<string, unknown>)?.certifications as string[] || [];
 
