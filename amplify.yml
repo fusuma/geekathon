@@ -1,26 +1,24 @@
 version: 1
-applications:
-  - appRoot: apps/web
-    frontend:
-      phases:
-        preBuild:
-          commands:
-            - echo "Installing dependencies..."
-            - npm install -g pnpm@9.0.0
-            - pnpm install
-        build:
-          commands:
-            - echo "Building the application..."
-            - pnpm build
-            - echo "Copying static files for standalone deployment..."
-            - cp -r apps/web/public .next/standalone/apps/web/
-            - cp -r .next/static .next/standalone/apps/web/.next/
-      artifacts:
-        baseDirectory: .next/standalone
-        files:
-          - '**/*'
-      cache:
-        paths:
-          - node_modules/**/*
-          - apps/web/node_modules/**/*
-          - apps/web/.next/cache/**/*
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - echo "Installing dependencies..."
+        - npm install -g pnpm@9.0.0
+        - pnpm install
+    build:
+      commands:
+        - echo "Building the application..."
+        - pnpm build
+        - echo "Copying static files for standalone deployment..."
+        - cp -r apps/web/public .next/standalone/apps/web/
+        - cp -r .next/static .next/standalone/apps/web/.next/
+  artifacts:
+    baseDirectory: .next/standalone
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - apps/web/node_modules/**/*
+      - apps/web/.next/cache/**/*
