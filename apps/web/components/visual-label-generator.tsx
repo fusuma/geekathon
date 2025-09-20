@@ -10,6 +10,69 @@ interface VisualLabelGeneratorProps {
   onClose?: () => void;
 }
 
+// Mock function to create a simple label image
+function createMockLabelImage(labelData: any): string {
+  // Create a simple canvas-based image representation
+  const canvas = document.createElement('canvas');
+  canvas.width = 400;
+  canvas.height = 600;
+  const ctx = canvas.getContext('2d');
+  
+  if (!ctx) return '';
+  
+  // White background
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Black border
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+  
+  let y = 40;
+  
+  // Title
+  ctx.fillStyle = '#000000';
+  ctx.font = 'bold 24px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Nutrition Facts', canvas.width / 2, y);
+  y += 30;
+  
+  // Product name
+  ctx.font = 'bold 16px Arial';
+  ctx.fillText(labelData.nutrition_facts?.serving_size || 'Serving Size', canvas.width / 2, y);
+  y += 25;
+  
+  // Serving info
+  ctx.font = '14px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Serving Size: ${labelData.nutrition_facts?.serving_size || '100g'}`, 20, y);
+  y += 20;
+  ctx.fillText(`Servings per Container: ${labelData.nutrition_facts?.servings_per_container || '1'}`, 20, y);
+  y += 30;
+  
+  // Calories
+  ctx.font = 'bold 20px Arial';
+  ctx.fillText(`Calories: ${labelData.nutrition_facts?.calories || '0'}`, 20, y);
+  y += 30;
+  
+  // Nutrients
+  ctx.font = '14px Arial';
+  if (labelData.nutrition_facts?.nutrients) {
+    labelData.nutrition_facts.nutrients.forEach((nutrient: any) => {
+      ctx.fillText(`${nutrient.name}: ${nutrient.amount} (${nutrient.daily_value})`, 20, y);
+      y += 20;
+    });
+  }
+  
+  y += 20;
+  ctx.fillText(`Ingredients: ${labelData.ingredients || 'Not specified'}`, 20, y);
+  y += 20;
+  ctx.fillText(`Allergens: ${labelData.allergens || 'None'}`, 20, y);
+  
+  return canvas.toDataURL('image/png');
+}
+
 export function VisualLabelGenerator({ labelData, onClose }: VisualLabelGeneratorProps) {
   const [generating, setGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -21,34 +84,29 @@ export function VisualLabelGenerator({ labelData, onClose }: VisualLabelGenerato
     setGeneratedImage(null);
 
     try {
-        const response = await fetch(`https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/labels/visual`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            productName: labelData.productName || 'Product',
-            servingSize: labelData.servingSize || '1 serving',
-            servingsPerContainer: labelData.servingsPerContainer || '1',
-            calories: labelData.calories || '0',
-            nutritionalValues: labelData.nutritionalValues || {},
-            ingredients: labelData.ingredients || 'Ingredients not specified',
-            market: labelData.market || 'spain',
-            certifications: labelData.certifications || []
-          })
-        });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to generate visual label');
-      }
-
-      const result = await response.json();
-      
-      if (result.success && result.data?.image_base64) {
-        setGeneratedImage(`data:image/png;base64,${result.data.image_base64}`);
-      } else {
-        throw new Error('No image data received');
+        // Use the new API service
+        const { generateNutritionLabel } = await import('../services/api');
+        
+        const productData = {
+          name: labelData.productName || 'Product',
+          serving_size: labelData.servingSize || '1 serving',
+          servings_per_container: labelData.servingsPerContainer || '1',
+          calories: labelData.calories || '0',
+          total_fat: labelData.nutritionalValues?.total_fat || '0g',
+          protein: labelData.nutritionalValues?.protein || '0g',
+          ingredients: labelData.ingredients || 'Ingredients not specified'
+        };
+        
+        const result = await generateNutritionLabel(productData, labelData.market || 'spain');
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to generate nutrition label');
+        }
+        
+        // For now, we'll create a simple visual representation
+        // In a real implementation, this would generate an actual image
+        const mockImageData = createMockLabelImage(result.data);
+        setGeneratedImage(mockImageData);
       }
 
     } catch (err) {
