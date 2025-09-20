@@ -770,7 +770,7 @@ export default function HomePage() {
                           : 'bg-gray-700 hover:bg-gray-600 text-white'
                       }`}
                     >
-                      {isRefreshing ? '⏳ Refreshing...' : '🔄 Refresh'}
+                      {isRefreshing ? 'Refreshing...' : 'Refresh'}
                     </button>
                     
                     {labels.length > 0 && (
@@ -783,7 +783,7 @@ export default function HomePage() {
                             : 'bg-gray-700 hover:bg-gray-600 text-white'
                         }`}
                       >
-                        {isSelectMode ? '✅ Cancel Selection' : '☑️ Select Multiple'}
+                        {isSelectMode ? 'Cancel Selection' : 'Select Multiple'}
                     </button>
                     )}
                   </div>
