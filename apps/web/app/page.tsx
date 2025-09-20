@@ -818,25 +818,25 @@ export default function HomePage() {
                           type="button"
                           onClick={handleBulkExportJSON}
                           disabled={selectedLabels.size === 0}
-                          className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
+                          className="px-3 py-1 text-xs bg-slate-600 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
                         >
-                          📄 Export JSON
+                          Export JSON
                         </button>
                         <button
                           type="button"
                           onClick={handleBulkExportPDF}
                           disabled={selectedLabels.size === 0}
-                          className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
+                          className="px-3 py-1 text-xs bg-slate-600 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
                         >
-                          📄 Export PDF
+                          Export PDF
                         </button>
                         <button
                           type="button"
                           onClick={handleBulkDelete}
                           disabled={selectedLabels.size === 0}
-                          className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
+                          className="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
                         >
-                          🗑️ Delete Selected
+                          Delete Selected
                         </button>
                       </div>
                     </div>
