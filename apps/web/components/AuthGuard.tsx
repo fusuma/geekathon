@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 
 interface AuthGuardProps {
@@ -12,15 +12,17 @@ interface AuthGuardProps {
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    // Don't redirect if we're already on the login page
+    if (!isLoading && !user && pathname !== '/login') {
       router.push('/login');
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, pathname]);
 
-  // Mostrar loading enquanto verifica autenticação
-  if (isLoading) {
+  // Mostrar loading enquanto verifica autenticação (mas não na página de login)
+  if (isLoading && pathname !== '/login') {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -36,11 +38,11 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // Se não estiver logado, não renderizar nada (o useEffect vai redirecionar)
-  if (!user) {
+  // Se não estiver logado e não estiver na página de login, não renderizar nada
+  if (!user && pathname !== '/login') {
     return null;
   }
 
-  // Se estiver logado, renderizar o conteúdo protegido
+  // Se estiver logado ou estiver na página de login, renderizar o conteúdo
   return <>{children}</>;
 }
