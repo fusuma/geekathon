@@ -117,6 +117,7 @@ const nextConfig = {
   // Output configuration for static export optimization
   output: 'export', // Static export for Lambda deployment
   trailingSlash: true,
+  skipTrailingSlashRedirect: true,
   images: {
     unoptimized: true, // Required for static export
   },
