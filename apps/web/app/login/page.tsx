@@ -221,27 +221,6 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Demo Credentials */}
-            <div className="mt-8 p-5 bg-gradient-to-r from-slate-50/80 to-gray-50/80 rounded-xl border border-gray-200/50 backdrop-blur-sm">
-              <div className="flex items-center mb-3">
-                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-semibold text-slate-800">Demo Credentials</h3>
-              </div>
-              <div className="text-sm text-slate-700 space-y-2">
-                <div className="flex items-center justify-between bg-white/70 rounded-lg p-3">
-                  <span className="font-medium">Username:</span>
-                  <code className="bg-slate-100 text-slate-800 px-2 py-1 rounded text-xs font-mono">admin</code>
-                </div>
-                <div className="flex items-center justify-between bg-white/70 rounded-lg p-3">
-                  <span className="font-medium">Password:</span>
-                  <code className="bg-slate-100 text-slate-800 px-2 py-1 rounded text-xs font-mono">admin</code>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
