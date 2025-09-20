@@ -277,15 +277,6 @@ export function AdvancedMarketSelector() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-                        isSelected 
-                          ? 'border-blue-500 bg-blue-500' 
-                          : 'border-gray-500 bg-transparent'
-                      }`}>
-                        {isSelected && (
-                          <CheckCircle className="h-3 w-3 text-white" />
-                        )}
-                      </div>
                       <div className="flex-1">
                         <CardTitle className="text-lg font-semibold tracking-tight text-gray-100">
                           {marketInfo.label}
