@@ -9,20 +9,21 @@ interface VisualLabelModalProps {
 }
 
 export function VisualLabelModal({ isOpen, onClose, labelData }: VisualLabelModalProps) {
-  const [exportFormat, setExportFormat] = useState<'pdf' | 'png'>('pdf');
+  const [exportFormat, setExportFormat] = useState<'pdf' | 'png' | 'json'>('pdf');
   const [isGenerating, setIsGenerating] = useState(false);
 
   if (!isOpen) return null;
 
   // Extrair dados do label - adaptado para a estrutura do objeto Label
-  const productName = (labelData as Record<string, unknown>).productName || (labelData as Record<string, unknown>).labelData?.productName || 'Product Name';
-  const servingSize = (labelData as Record<string, unknown>).servingSize || (labelData as Record<string, unknown>).labelData?.servingSize || '1 serving';
-  const servingsPerContainer = (labelData as Record<string, unknown>).servingsPerContainer || (labelData as Record<string, unknown>).labelData?.servingsPerContainer || '1';
-  const calories = (labelData as Record<string, unknown>).calories || (labelData as Record<string, unknown>).labelData?.calories || '0';
-  const nutritionalValues = (labelData as Record<string, unknown>).nutritionalValues || (labelData as Record<string, unknown>).labelData?.nutritionalValues || {};
-  const ingredients = (labelData as Record<string, unknown>).ingredients || (labelData as Record<string, unknown>).labelData?.legalLabel?.ingredients || 'Ingredients not specified';
-  const market = (labelData as Record<string, unknown>).market || 'spain';
-  const certifications = (labelData as Record<string, unknown>).certifications || [];
+  const labelDataTyped = labelData as any; // Type assertion for easier access
+  const productName = (labelDataTyped.productName as string) || (labelDataTyped.labelData?.productName as string) || 'Product Name';
+  const servingSize = (labelDataTyped.servingSize as string) || (labelDataTyped.labelData?.servingSize as string) || '1 serving';
+  const servingsPerContainer = (labelDataTyped.servingsPerContainer as string) || (labelDataTyped.labelData?.servingsPerContainer as string) || '1';
+  const calories = (labelDataTyped.calories as string) || (labelDataTyped.labelData?.calories as string) || '0';
+  const nutritionalValues = (labelDataTyped.nutritionalValues as Record<string, unknown>) || (labelDataTyped.labelData?.nutritionalValues as Record<string, unknown>) || {};
+  const ingredients = (labelDataTyped.ingredients as string) || (labelDataTyped.labelData?.legalLabel?.ingredients as string) || 'Ingredients not specified';
+  const market = (labelDataTyped.market as string) || 'spain';
+  const certifications = (labelDataTyped.certifications as string[]) || [];
 
   // Função para formatar valores nutricionais
   const formatNutritionValue = (value: unknown) => {
@@ -84,6 +85,18 @@ export function VisualLabelModal({ isOpen, onClose, labelData }: VisualLabelModa
         } else {
           throw new Error('No image data received');
         }
+      } else if (exportFormat === 'json') {
+        // Gerar JSON
+        const dataStr = JSON.stringify(labelData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${productName || 'label'}_${market || 'unknown'}_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
       } else {
         // Gerar PDF (fallback para download simples)
         const printWindow = window.open('', '_blank');
@@ -227,7 +240,7 @@ export function VisualLabelModal({ isOpen, onClose, labelData }: VisualLabelModa
                         type="radio"
                         value="pdf"
                         checked={exportFormat === 'pdf'}
-                        onChange={(e) => setExportFormat(e.target.value as 'pdf' | 'png')}
+                        onChange={(e) => setExportFormat(e.target.value as 'pdf' | 'png' | 'json')}
                         className="mr-2"
                       />
                       <span className="text-white">PDF</span>
@@ -237,22 +250,34 @@ export function VisualLabelModal({ isOpen, onClose, labelData }: VisualLabelModa
                         type="radio"
                         value="png"
                         checked={exportFormat === 'png'}
-                        onChange={(e) => setExportFormat(e.target.value as 'pdf' | 'png')}
+                        onChange={(e) => setExportFormat(e.target.value as 'pdf' | 'png' | 'json')}
                         className="mr-2"
                       />
-                      <span className="text-white">PNG</span>
+                      <span className="text-white">PNG (with AWS Bedrock)</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="json"
+                        checked={exportFormat === 'json'}
+                        onChange={(e) => setExportFormat(e.target.value as 'pdf' | 'png' | 'json')}
+                        className="mr-2"
+                      />
+                      <span className="text-white">JSON</span>
                     </label>
                   </div>
                 </div>
 
                 <div className="bg-gray-700 p-4 rounded-lg">
                   <h4 className="text-white font-medium mb-2">
-                    {exportFormat === 'pdf' ? '📄 PDF Export' : '🎨 PNG Export with AI'}
+                    {exportFormat === 'pdf' ? '📄 PDF Export' : exportFormat === 'png' ? '🎨 PNG Export with AI' : '📋 JSON Export'}
                   </h4>
                   <p className="text-gray-300 text-sm">
                     {exportFormat === 'pdf' 
                       ? 'Generates a simple PDF with label data for printing.'
-                      : 'Uses AWS Bedrock to generate a professional PNG image of the nutrition label.'
+                      : exportFormat === 'png'
+                      ? 'Uses AWS Bedrock to generate a professional PNG image of the nutrition label.'
+                      : 'Downloads the complete label data in JSON format for integration and analysis.'
                     }
                   </p>
                 </div>
