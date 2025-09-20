@@ -1,21 +1,25 @@
 version: 1
-frontend:
-  phases:
-    preBuild:
-      commands:
-        - echo "Installing dependencies..."
-        - npm install -g pnpm@9.0.0
-        - pnpm install
-    build:
-      commands:
-        - echo "Building the application..."
-        - pnpm build
-  artifacts:
-    baseDirectory: apps/web
-    files:
-      - '**/*'
-  cache:
-    paths:
-      - node_modules/**/*
-      - apps/web/node_modules/**/*
-      - apps/web/.next/cache/**/*
+applications:
+  - appRoot: apps/web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - echo "Installing dependencies..."
+            - cd ../..
+            - npm install -g pnpm@9.0.0
+            - pnpm install
+        build:
+          commands:
+            - echo "Building the application..."
+            - cd ../..
+            - pnpm build
+      artifacts:
+        baseDirectory: apps/web
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+          - apps/web/node_modules/**/*
+          - apps/web/.next/cache/**/*
