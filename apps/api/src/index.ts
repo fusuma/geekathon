@@ -125,9 +125,23 @@ async function generateNutritionLabel(body: string | null) {
   try {
     productData = JSON.parse(body);
     
-    // Generate nutrition label using Bedrock AI
-    const prompt = `You are a nutrition expert. Generate a comprehensive nutrition label for the following product:
+    // Market configuration mapping
+    const marketConfig = {
+      'usa': { language: 'EN', country: 'United States', regulations: ['FDA Food Labeling Requirements', 'English language required', 'Nutritional values per serving', 'Allergen declaration required'] },
+      'uk': { language: 'EN', country: 'United Kingdom', regulations: ['UK Food Information Regulations 2014', 'English language required', 'Allergens must be highlighted', 'Nutritional values per 100g/ml'] },
+      'spain': { language: 'ES', country: 'Spain', regulations: ['EU Food Information Regulation (FIC)', 'Spanish language required', 'Allergens must be highlighted', 'Nutritional values per 100g/ml'] },
+      'brazil': { language: 'PT', country: 'Brazil', regulations: ['ANVISA RDC 360/2003', 'Portuguese language required', 'Front-of-pack labeling for high sugar, fat, sodium', 'Nutritional values per portion'] },
+      'angola': { language: 'PT', country: 'Angola', regulations: ['Angolan Food Safety Law', 'Portuguese language required', 'Basic nutritional information'] },
+      'macau': { language: 'ZH', country: 'Macau', regulations: ['Macau Food Safety Law', 'Chinese and Portuguese language required', 'Nutritional values per 100g/ml'] },
+      'halal': { language: 'AR', country: 'UAE (Halal)', regulations: ['UAE.S GSO 2055-1 (Halal)', 'Arabic language required', 'Halal certification required', 'Nutritional values per 100g/ml'] }
+    };
 
+    const selectedMarket = marketConfig[productData.market as keyof typeof marketConfig] || marketConfig['spain'];
+    
+    // Generate nutrition label using Bedrock AI with market-specific instructions
+    const prompt = `You are a nutrition expert specializing in international food labeling regulations. Generate a comprehensive nutrition label for the following product, specifically adapted for the target market:
+
+PRODUCT INFORMATION:
 Product Name: ${productData.name || 'Product'}
 Serving Size: ${productData.serving_size || '1 serving'}
 Servings Per Container: ${productData.servings_per_container || '1'}
@@ -135,25 +149,36 @@ Calories: ${productData.calories || '0'}
 Total Fat: ${productData.total_fat || '0'}g
 Protein: ${productData.protein || '0'}g
 Ingredients: ${productData.ingredients || 'Ingredients not specified'}
-Market: ${productData.market || 'spain'}
+
+TARGET MARKET: ${selectedMarket.country} (${selectedMarket.language})
+REGULATIONS TO FOLLOW: ${selectedMarket.regulations.join(', ')}
+
+IMPORTANT INSTRUCTIONS:
+1. ALL TEXT MUST BE TRANSLATED TO ${selectedMarket.language === 'EN' ? 'ENGLISH' : selectedMarket.language === 'ES' ? 'SPANISH' : selectedMarket.language === 'PT' ? 'PORTUGUESE' : selectedMarket.language === 'ZH' ? 'CHINESE' : selectedMarket.language === 'AR' ? 'ARABIC' : 'ENGLISH'}
+2. Follow the specific regulations for ${selectedMarket.country}
+3. Use appropriate units and formatting for ${selectedMarket.country}
+4. Include all required allergen warnings in the target language
+5. Ensure nutritional values are presented according to ${selectedMarket.country} standards
 
 Please generate a complete nutrition facts label in JSON format with the following structure:
 {
   "nutrition_facts": {
-    "serving_size": "string",
-    "servings_per_container": "string", 
-    "calories": "string",
+    "serving_size": "string (translated)",
+    "servings_per_container": "string (translated)", 
+    "calories": "string (translated)",
     "nutrients": [
-      {"name": "string", "amount": "string", "unit": "string", "daily_value": "string"}
+      {"name": "string (translated)", "amount": "string", "unit": "string", "daily_value": "string"}
     ]
   },
-  "ingredients": "string",
-  "warnings": ["string"],
+  "ingredients": "string (translated)",
+  "warnings": ["string (translated)"],
   "market": "string",
+  "language": "${selectedMarket.language}",
+  "country": "${selectedMarket.country}",
   "ai_generated": true
 }
 
-Include all standard nutrients (Total Fat, Saturated Fat, Trans Fat, Cholesterol, Sodium, Total Carbohydrate, Dietary Fiber, Total Sugars, Protein) with realistic values based on the product type. Add any relevant warnings for allergens or health concerns.`;
+Include all standard nutrients with realistic values based on the product type. Translate all text including nutrient names, warnings, and any regulatory statements to ${selectedMarket.language === 'EN' ? 'English' : selectedMarket.language === 'ES' ? 'Spanish' : selectedMarket.language === 'PT' ? 'Portuguese' : selectedMarket.language === 'ZH' ? 'Chinese' : selectedMarket.language === 'AR' ? 'Arabic' : 'English'}. Add any relevant warnings for allergens or health concerns in the target language.`;
 
     const bedrockResponse = await bedrockClient.send(new InvokeModelCommand({
       modelId: process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-sonnet-20240229-v1:0',
@@ -179,27 +204,39 @@ Include all standard nutrients (Total Fat, Saturated Fat, Trans Fat, Cholesterol
     try {
       aiGeneratedData = JSON.parse(aiContent);
     } catch (parseError) {
-      // If AI response is not valid JSON, create a structured response
+      // If AI response is not valid JSON, create a structured response with market-specific translations
+      const nutrientTranslations = {
+        'EN': { serving_size: 'Serving Size', servings_per_container: 'Servings Per Container', calories: 'Calories', total_fat: 'Total Fat', saturated_fat: 'Saturated Fat', trans_fat: 'Trans Fat', cholesterol: 'Cholesterol', sodium: 'Sodium', total_carbohydrate: 'Total Carbohydrate', dietary_fiber: 'Dietary Fiber', total_sugars: 'Total Sugars', protein: 'Protein' },
+        'ES': { serving_size: 'Tamaño de la porción', servings_per_container: 'Porciones por envase', calories: 'Calorías', total_fat: 'Grasa total', saturated_fat: 'Grasa saturada', trans_fat: 'Grasa trans', cholesterol: 'Colesterol', sodium: 'Sodio', total_carbohydrate: 'Hidratos de carbono totales', dietary_fiber: 'Fibra dietética', total_sugars: 'Azúcares totales', protein: 'Proteínas' },
+        'PT': { serving_size: 'Tamanho da porção', servings_per_container: 'Porções por embalagem', calories: 'Calorias', total_fat: 'Gordura total', saturated_fat: 'Gordura saturada', trans_fat: 'Gordura trans', cholesterol: 'Colesterol', sodium: 'Sódio', total_carbohydrate: 'Carboidratos totais', dietary_fiber: 'Fibra dietética', total_sugars: 'Açúcares totais', protein: 'Proteínas' },
+        'ZH': { serving_size: '每份重量', servings_per_container: '每包装份数', calories: '热量', total_fat: '总脂肪', saturated_fat: '饱和脂肪', trans_fat: '反式脂肪', cholesterol: '胆固醇', sodium: '钠', total_carbohydrate: '总碳水化合物', dietary_fiber: '膳食纤维', total_sugars: '总糖', protein: '蛋白质' },
+        'AR': { serving_size: 'حجم الحصة', servings_per_container: 'حصص لكل عبوة', calories: 'السعرات الحرارية', total_fat: 'إجمالي الدهون', saturated_fat: 'الدهون المشبعة', trans_fat: 'الدهون المتحولة', cholesterol: 'الكوليسترول', sodium: 'الصوديوم', total_carbohydrate: 'إجمالي الكربوهيدرات', dietary_fiber: 'الألياف الغذائية', total_sugars: 'إجمالي السكريات', protein: 'البروتين' }
+      };
+
+      const translations = nutrientTranslations[selectedMarket.language as keyof typeof nutrientTranslations] || nutrientTranslations['EN'];
+      
       aiGeneratedData = {
         nutrition_facts: {
-          serving_size: productData.serving_size || '1 serving',
-          servings_per_container: productData.servings_per_container || '1',
-          calories: productData.calories || '0',
+          serving_size: `${translations.serving_size}: ${productData.serving_size || '1 serving'}`,
+          servings_per_container: `${translations.servings_per_container}: ${productData.servings_per_container || '1'}`,
+          calories: `${translations.calories}: ${productData.calories || '0'}`,
           nutrients: [
-            { name: 'Total Fat', amount: productData.total_fat || '0', unit: 'g', daily_value: '6%' },
-            { name: 'Saturated Fat', amount: '0', unit: 'g', daily_value: '0%' },
-            { name: 'Trans Fat', amount: '0', unit: 'g', daily_value: '0%' },
-            { name: 'Cholesterol', amount: '0', unit: 'mg', daily_value: '0%' },
-            { name: 'Sodium', amount: '0', unit: 'mg', daily_value: '0%' },
-            { name: 'Total Carbohydrate', amount: '0', unit: 'g', daily_value: '0%' },
-            { name: 'Dietary Fiber', amount: '0', unit: 'g', daily_value: '0%' },
-            { name: 'Total Sugars', amount: '0', unit: 'g', daily_value: '0%' },
-            { name: 'Protein', amount: productData.protein || '0', unit: 'g', daily_value: '0%' },
+            { name: translations.total_fat, amount: productData.total_fat || '0', unit: 'g', daily_value: '6%' },
+            { name: translations.saturated_fat, amount: '0', unit: 'g', daily_value: '0%' },
+            { name: translations.trans_fat, amount: '0', unit: 'g', daily_value: '0%' },
+            { name: translations.cholesterol, amount: '0', unit: 'mg', daily_value: '0%' },
+            { name: translations.sodium, amount: '0', unit: 'mg', daily_value: '0%' },
+            { name: translations.total_carbohydrate, amount: '0', unit: 'g', daily_value: '0%' },
+            { name: translations.dietary_fiber, amount: '0', unit: 'g', daily_value: '0%' },
+            { name: translations.total_sugars, amount: '0', unit: 'g', daily_value: '0%' },
+            { name: translations.protein, amount: productData.protein || '0', unit: 'g', daily_value: '0%' },
           ],
         },
-        ingredients: productData.ingredients || 'Ingredients not specified',
+        ingredients: productData.ingredients || (selectedMarket.language === 'ES' ? 'Ingredientes no especificados' : selectedMarket.language === 'PT' ? 'Ingredientes não especificados' : selectedMarket.language === 'ZH' ? '未指定成分' : selectedMarket.language === 'AR' ? 'المكونات غير محددة' : 'Ingredients not specified'),
         warnings: [],
         market: productData.market || 'spain',
+        language: selectedMarket.language,
+        country: selectedMarket.country,
         ai_generated: true,
         ai_response: aiContent
       };
@@ -254,27 +291,51 @@ Include all standard nutrients (Total Fat, Saturated Fat, Trans Fat, Cholesterol
   } catch (error) {
     console.error('Bedrock error:', error);
     
-    // Fallback to mock data if Bedrock fails
+    // Fallback to mock data if Bedrock fails - with market-specific translations
+    const marketConfig = {
+      'usa': { language: 'EN', country: 'United States' },
+      'uk': { language: 'EN', country: 'United Kingdom' },
+      'spain': { language: 'ES', country: 'Spain' },
+      'brazil': { language: 'PT', country: 'Brazil' },
+      'angola': { language: 'PT', country: 'Angola' },
+      'macau': { language: 'ZH', country: 'Macau' },
+      'halal': { language: 'AR', country: 'UAE (Halal)' }
+    };
+
+    const selectedMarket = marketConfig[productData?.market as keyof typeof marketConfig] || marketConfig['spain'];
+    
+    const nutrientTranslations = {
+      'EN': { serving_size: 'Serving Size', servings_per_container: 'Servings Per Container', calories: 'Calories', total_fat: 'Total Fat', saturated_fat: 'Saturated Fat', trans_fat: 'Trans Fat', cholesterol: 'Cholesterol', sodium: 'Sodium', total_carbohydrate: 'Total Carbohydrate', dietary_fiber: 'Dietary Fiber', total_sugars: 'Total Sugars', protein: 'Protein' },
+      'ES': { serving_size: 'Tamaño de la porción', servings_per_container: 'Porciones por envase', calories: 'Calorías', total_fat: 'Grasa total', saturated_fat: 'Grasa saturada', trans_fat: 'Grasa trans', cholesterol: 'Colesterol', sodium: 'Sodio', total_carbohydrate: 'Hidratos de carbono totales', dietary_fiber: 'Fibra dietética', total_sugars: 'Azúcares totales', protein: 'Proteínas' },
+      'PT': { serving_size: 'Tamanho da porção', servings_per_container: 'Porções por embalagem', calories: 'Calorias', total_fat: 'Gordura total', saturated_fat: 'Gordura saturada', trans_fat: 'Gordura trans', cholesterol: 'Colesterol', sodium: 'Sódio', total_carbohydrate: 'Carboidratos totais', dietary_fiber: 'Fibra dietética', total_sugars: 'Açúcares totais', protein: 'Proteínas' },
+      'ZH': { serving_size: '每份重量', servings_per_container: '每包装份数', calories: '热量', total_fat: '总脂肪', saturated_fat: '饱和脂肪', trans_fat: '反式脂肪', cholesterol: '胆固醇', sodium: '钠', total_carbohydrate: '总碳水化合物', dietary_fiber: '膳食纤维', total_sugars: '总糖', protein: '蛋白质' },
+      'AR': { serving_size: 'حجم الحصة', servings_per_container: 'حصص لكل عبوة', calories: 'السعرات الحرارية', total_fat: 'إجمالي الدهون', saturated_fat: 'الدهون المشبعة', trans_fat: 'الدهون المتحولة', cholesterol: 'الكوليسترول', sodium: 'الصوديوم', total_carbohydrate: 'إجمالي الكربوهيدرات', dietary_fiber: 'الألياف الغذائية', total_sugars: 'إجمالي السكريات', protein: 'البروتين' }
+    };
+
+    const translations = nutrientTranslations[selectedMarket.language as keyof typeof nutrientTranslations] || nutrientTranslations['EN'];
+    
     const fallbackData = {
       nutrition_facts: {
-        serving_size: '1 serving',
-        servings_per_container: '1',
-        calories: '0',
+        serving_size: `${translations.serving_size}: 1 serving`,
+        servings_per_container: `${translations.servings_per_container}: 1`,
+        calories: `${translations.calories}: 0`,
         nutrients: [
-          { name: 'Total Fat', amount: '0', unit: 'g', daily_value: '0%' },
-          { name: 'Saturated Fat', amount: '0', unit: 'g', daily_value: '0%' },
-          { name: 'Trans Fat', amount: '0', unit: 'g', daily_value: '0%' },
-          { name: 'Cholesterol', amount: '0', unit: 'mg', daily_value: '0%' },
-          { name: 'Sodium', amount: '0', unit: 'mg', daily_value: '0%' },
-          { name: 'Total Carbohydrate', amount: '0', unit: 'g', daily_value: '0%' },
-          { name: 'Dietary Fiber', amount: '0', unit: 'g', daily_value: '0%' },
-          { name: 'Total Sugars', amount: '0', unit: 'g', daily_value: '0%' },
-          { name: 'Protein', amount: '0', unit: 'g', daily_value: '0%' },
+          { name: translations.total_fat, amount: '0', unit: 'g', daily_value: '0%' },
+          { name: translations.saturated_fat, amount: '0', unit: 'g', daily_value: '0%' },
+          { name: translations.trans_fat, amount: '0', unit: 'g', daily_value: '0%' },
+          { name: translations.cholesterol, amount: '0', unit: 'mg', daily_value: '0%' },
+          { name: translations.sodium, amount: '0', unit: 'mg', daily_value: '0%' },
+          { name: translations.total_carbohydrate, amount: '0', unit: 'g', daily_value: '0%' },
+          { name: translations.dietary_fiber, amount: '0', unit: 'g', daily_value: '0%' },
+          { name: translations.total_sugars, amount: '0', unit: 'g', daily_value: '0%' },
+          { name: translations.protein, amount: '0', unit: 'g', daily_value: '0%' },
         ],
       },
-      ingredients: 'Ingredients not specified',
+      ingredients: selectedMarket.language === 'ES' ? 'Ingredientes no especificados' : selectedMarket.language === 'PT' ? 'Ingredientes não especificados' : selectedMarket.language === 'ZH' ? '未指定成分' : selectedMarket.language === 'AR' ? 'المكونات غير محددة' : 'Ingredients not specified',
       warnings: [],
-      market: 'spain',
+      market: productData?.market || 'spain',
+      language: selectedMarket.language,
+      country: selectedMarket.country,
       ai_generated: false,
       fallback: true,
       error: error instanceof Error ? error.message : 'Unknown error',
