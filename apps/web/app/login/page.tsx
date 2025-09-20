@@ -51,18 +51,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-green-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Floating geometric shapes */}
-        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-br from-green-100 to-green-200 rounded-full opacity-20 animate-pulse"></div>
-        <div className="absolute top-40 right-32 w-24 h-24 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full opacity-20 animate-bounce"></div>
-        <div className="absolute bottom-32 left-32 w-40 h-40 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full opacity-15 animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-28 h-28 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full opacity-20 animate-bounce"></div>
+        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-br from-slate-200 to-slate-300 rounded-full opacity-10 animate-pulse"></div>
+        <div className="absolute top-40 right-32 w-24 h-24 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full opacity-10 animate-bounce"></div>
+        <div className="absolute bottom-32 left-32 w-40 h-40 bg-gradient-to-br from-slate-200 to-slate-300 rounded-full opacity-8 animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-28 h-28 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full opacity-10 animate-bounce"></div>
         
         {/* Subtle grid pattern */}
         <div className="absolute inset-0 opacity-[0.02]" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23059669' fill-opacity='0.1'%3E%3Cpath d='M20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%234B5563' fill-opacity='0.1'%3E%3Cpath d='M20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E")`,
         }} />
       </div>
 
@@ -75,16 +75,16 @@ export default function LoginPage() {
           <p className="text-gray-600 text-base font-medium">
             AI-Powered Food Labeling System
           </p>
-          <div className="mt-2 flex items-center justify-center space-x-2 text-sm text-gray-500">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <div className="mt-2 flex items-center justify-center space-x-2 text-sm text-gray-600">
+            <div className="w-2 h-2 bg-slate-500 rounded-full animate-pulse"></div>
             <span>Secure • Intelligent • Compliant</span>
           </div>
         </div>
 
         {/* Login Form */}
-        <div className="login-form bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20 relative overflow-hidden">
+        <div className="login-form bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-gray-200/50 relative overflow-hidden">
           {/* Form background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/90 to-green-50/30 rounded-3xl"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-slate-50/40 rounded-3xl"></div>
           
           <div className="relative z-10">
             <div className="mb-8">
@@ -104,7 +104,7 @@ export default function LoginPage() {
                 </label>
                 <div className="relative group">
                   <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${
-                    focusedField === 'username' ? 'text-green-500' : 'text-gray-400'
+                    focusedField === 'username' ? 'text-slate-600' : 'text-gray-500'
                   }`}>
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -117,11 +117,11 @@ export default function LoginPage() {
                     onChange={(e) => setUsername(e.target.value)}
                     onFocus={() => setFocusedField('username')}
                     onBlur={() => setFocusedField(null)}
-                    className={`block w-full pl-12 pr-4 py-4 border-2 rounded-xl transition-all duration-200 bg-white/50 backdrop-blur-sm !text-gray-900 placeholder-gray-500 ${
+                    className={`block w-full pl-12 pr-4 py-4 border-2 rounded-xl transition-all duration-200 bg-white/70 backdrop-blur-sm !text-gray-900 placeholder-gray-600 ${
                       focusedField === 'username' 
-                        ? 'border-green-500 ring-4 ring-green-100 shadow-lg' 
-                        : 'border-gray-200 hover:border-gray-300 focus:border-green-500'
-                    } ${error ? 'border-red-300 ring-4 ring-red-100' : ''}`}
+                        ? 'border-slate-500 ring-4 ring-slate-100 shadow-lg' 
+                        : 'border-gray-300 hover:border-gray-400 focus:border-slate-500'
+                    } ${error ? 'border-red-400 ring-4 ring-red-100' : ''}`}
                     style={{ color: '#111827' }}
                     placeholder="Enter your username"
                     required
@@ -137,7 +137,7 @@ export default function LoginPage() {
                 </label>
                 <div className="relative group">
                   <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${
-                    focusedField === 'password' ? 'text-green-500' : 'text-gray-400'
+                    focusedField === 'password' ? 'text-slate-600' : 'text-gray-500'
                   }`}>
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -150,11 +150,11 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
-                    className={`block w-full pl-12 pr-12 py-4 border-2 rounded-xl transition-all duration-200 bg-white/50 backdrop-blur-sm !text-gray-900 placeholder-gray-500 ${
+                    className={`block w-full pl-12 pr-12 py-4 border-2 rounded-xl transition-all duration-200 bg-white/70 backdrop-blur-sm !text-gray-900 placeholder-gray-600 ${
                       focusedField === 'password' 
-                        ? 'border-green-500 ring-4 ring-green-100 shadow-lg' 
-                        : 'border-gray-200 hover:border-gray-300 focus:border-green-500'
-                    } ${error ? 'border-red-300 ring-4 ring-red-100' : ''}`}
+                        ? 'border-slate-500 ring-4 ring-slate-100 shadow-lg' 
+                        : 'border-gray-300 hover:border-gray-400 focus:border-slate-500'
+                    } ${error ? 'border-red-400 ring-4 ring-red-100' : ''}`}
                     style={{ color: '#111827' }}
                     placeholder="Enter your password"
                     required
@@ -163,7 +163,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-gray-700 transition-colors"
                     disabled={isLoading}
                   >
                     {showPassword ? (
@@ -200,7 +200,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-green-500 via-green-600 to-emerald-600 hover:from-green-600 hover:via-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-700 hover:via-slate-800 hover:to-gray-800 focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isLoading ? (
                   <>
@@ -221,43 +221,22 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Demo Credentials */}
-            <div className="mt-8 p-5 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 rounded-xl border border-blue-100/50 backdrop-blur-sm">
-              <div className="flex items-center mb-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-semibold text-blue-900">Demo Credentials</h3>
-              </div>
-              <div className="text-sm text-blue-800 space-y-2">
-                <div className="flex items-center justify-between bg-white/60 rounded-lg p-3">
-                  <span className="font-medium">Username:</span>
-                  <code className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">admin</code>
-                </div>
-                <div className="flex items-center justify-between bg-white/60 rounded-lg p-3">
-                  <span className="font-medium">Password:</span>
-                  <code className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">admin</code>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
         {/* Footer */}
         <div className="text-center mt-12">
-          <div className="flex items-center justify-center space-x-6 text-sm text-gray-500 mb-4">
+          <div className="flex items-center justify-center space-x-6 text-sm text-gray-600 mb-4">
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
               <span>SSL Secured</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
               <span>GDPR Compliant</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-slate-600 rounded-full"></div>
               <span>ISO 27001</span>
             </div>
           </div>

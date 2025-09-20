@@ -6,6 +6,7 @@ import { SimpleGenerationTrace } from '@/components/animations/simple-generation
 import { EnhancedComparisonLayout } from '@/components/comparison/enhanced-comparison-layout';
 import { CrisisResponseForm } from '@/components/forms/crisis-response-form';
 import { CrisisAnalysisResults } from '@/components/crisis/crisis-analysis-results';
+import { VisualLabelModal } from '@/components/visual-label-modal';
 import AuthGuard from '@/components/AuthGuard';
 import UserHeader from '@/components/UserHeader';
 
@@ -78,6 +79,10 @@ export default function HomePage() {
   // Multi-select states
   const [selectedLabels, setSelectedLabels] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
+
+  // Visual label modal state
+  const [showVisualModal, setShowVisualModal] = useState(false);
+  const [selectedLabelForVisual, setSelectedLabelForVisual] = useState<Label | null>(null);
 
   // Load existing labels on mount
   useEffect(() => {
@@ -448,6 +453,16 @@ export default function HomePage() {
     }
   };
 
+  const handleGenerateVisualLabel = (label: Label) => {
+    setSelectedLabelForVisual(label);
+    setShowVisualModal(true);
+  };
+
+  const handleCloseVisualModal = () => {
+    setShowVisualModal(false);
+    setSelectedLabelForVisual(null);
+  };
+
   const handleDownloadPDF = async (label: any) => {
     try {
       // Create a simple PDF-like document using HTML and print
@@ -755,7 +770,7 @@ export default function HomePage() {
                           : 'bg-gray-700 hover:bg-gray-600 text-white'
                       }`}
                     >
-                      {isRefreshing ? '⏳ Refreshing...' : '🔄 Refresh'}
+                      {isRefreshing ? 'Refreshing...' : 'Refresh'}
                     </button>
                     
                     {labels.length > 0 && (
@@ -768,7 +783,7 @@ export default function HomePage() {
                             : 'bg-gray-700 hover:bg-gray-600 text-white'
                         }`}
                       >
-                        {isSelectMode ? '✅ Cancel Selection' : '☑️ Select Multiple'}
+                        {isSelectMode ? 'Cancel Selection' : 'Select Multiple'}
                     </button>
                     )}
                   </div>
@@ -803,25 +818,25 @@ export default function HomePage() {
                           type="button"
                           onClick={handleBulkExportJSON}
                           disabled={selectedLabels.size === 0}
-                          className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
+                          className="px-3 py-1 text-xs bg-slate-600 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
                         >
-                          📄 Export JSON
+                          Export JSON
                         </button>
                         <button
                           type="button"
                           onClick={handleBulkExportPDF}
                           disabled={selectedLabels.size === 0}
-                          className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
+                          className="px-3 py-1 text-xs bg-slate-600 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
                         >
-                          📄 Export PDF
+                          Export PDF
                         </button>
                         <button
                           type="button"
                           onClick={handleBulkDelete}
                           disabled={selectedLabels.size === 0}
-                          className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
+                          className="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
                         >
-                          🗑️ Delete Selected
+                          Delete Selected
                         </button>
                       </div>
                     </div>
@@ -885,28 +900,11 @@ export default function HomePage() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const dataStr = JSON.stringify(label, null, 2);
-                                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                                const url = URL.createObjectURL(dataBlob);
-                                const link = document.createElement('a');
-                                link.href = url;
-                                link.download = `${label.productName || 'label'}_${label.market}.json`;
-                                link.click();
-                                URL.revokeObjectURL(url);
+                                handleGenerateVisualLabel(label);
                               }}
-                              className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                              className="px-3 py-1 text-xs bg-slate-600 hover:bg-slate-700 text-white rounded transition-colors"
                             >
-                              📄 JSON
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDownloadPDF(label);
-                              }}
-                              className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 rounded transition-colors"
-                            >
-                              📄 PDF
+                              Visual
                             </button>
                             <button
                               type="button"
@@ -914,9 +912,9 @@ export default function HomePage() {
                                 e.stopPropagation();
                                 handleDeleteLabel(label.labelId!);
                               }}
-                              className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 rounded transition-colors"
+                              className="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
                             >
-                              🗑️ Delete
+                              Delete
                             </button>
                           </div>
                         </div>
@@ -1006,9 +1004,19 @@ export default function HomePage() {
                 )}
               </div>
             )}
+
           </>
         )}
       </main>
+
+      {/* Visual Label Modal */}
+      {selectedLabelForVisual && (
+        <VisualLabelModal
+          isOpen={showVisualModal}
+          onClose={handleCloseVisualModal}
+          labelData={selectedLabelForVisual as Record<string, unknown>}
+        />
+      )}
 
       {/* Footer */}
       <footer className="bg-gray-800 border-t border-gray-700 mt-16">
@@ -1021,6 +1029,7 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
     </div>
     </AuthGuard>
   );
