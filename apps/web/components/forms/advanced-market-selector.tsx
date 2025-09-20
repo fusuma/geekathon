@@ -5,7 +5,6 @@ import { useAppStore } from '@/stores/app-store';
 import { MARKET_CONFIG } from '@/lib/market-config';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -272,17 +271,21 @@ export function AdvancedMarketSelector() {
                     : 'border-gray-600 hover:border-gray-500 hover:shadow-md'
                 } ${isPrimary ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-900' : ''}`}
               >
-                <CardHeader className="pb-4">
+                <CardHeader 
+                  className="pb-4 cursor-pointer"
+                  onClick={() => handleMarketChange(marketKey as Market, !isSelected)}
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={(checked) => {
-                          handleMarketChange(marketKey as Market, checked as boolean);
-                        }}
-                        className="mt-1"
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                        isSelected 
+                          ? 'border-blue-500 bg-blue-500' 
+                          : 'border-gray-500 bg-transparent'
+                      }`}>
+                        {isSelected && (
+                          <CheckCircle className="h-3 w-3 text-white" />
+                        )}
+                      </div>
                       <div className="flex-1">
                         <CardTitle className="text-lg font-semibold tracking-tight text-gray-100">
                           {marketInfo.label}
