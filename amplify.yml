@@ -6,13 +6,11 @@ applications:
         preBuild:
           commands:
             - echo "Installing dependencies..."
-            - cd ../..
             - npm install -g pnpm@9.0.0
             - pnpm install
         build:
           commands:
             - echo "Building the application..."
-            - cd ../..
             - pnpm build
       artifacts:
         baseDirectory: apps/web
