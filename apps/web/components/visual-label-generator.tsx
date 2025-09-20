@@ -85,7 +85,7 @@ export function VisualLabelGenerator({ labelData, onClose }: VisualLabelGenerato
 
     try {
         // Use the new API service
-        const { generateNutritionLabel } = await import('../services/api');
+        const { generateNutritionLabel } = await import('../src/services/api');
         
         const productData = {
           name: labelData.productName || 'Product',
@@ -107,7 +107,6 @@ export function VisualLabelGenerator({ labelData, onClose }: VisualLabelGenerato
         // In a real implementation, this would generate an actual image
         const mockImageData = createMockLabelImage(result.data);
         setGeneratedImage(mockImageData);
-      }
 
     } catch (err) {
       console.error('Error generating visual label:', err);
