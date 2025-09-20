@@ -9,7 +9,6 @@ import { CrisisAnalysisResults } from '@/components/crisis/crisis-analysis-resul
 import { VisualLabelModal } from '@/components/visual-label-modal';
 import AuthGuard from '@/components/AuthGuard';
 import UserHeader from '@/components/UserHeader';
-import Link from 'next/link';
 
 
 interface Label {
@@ -85,7 +84,7 @@ export default function HomePage() {
   const [showVisualModal, setShowVisualModal] = useState(false);
   const [selectedLabelForVisual, setSelectedLabelForVisual] = useState<Label | null>(null);
 
-  // Load existing labels on mount
+  // Load existing labels from localStorage on mount
   useEffect(() => {
     loadExistingLabels();
   }, []);
@@ -127,23 +126,24 @@ export default function HomePage() {
     }
 
     try {
-      const deletePromises = Array.from(selectedLabels).map(labelId =>
-        fetch(`https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/labels/${labelId}`, {
+      // Delete each selected label from DynamoDB
+      const deletePromises = Array.from(selectedLabels).map(async (labelId) => {
+        const response = await fetch(`https://2b5m23neo4.execute-api.us-east-1.amazonaws.com/Prod/api/labels/${labelId}`, {
           method: 'DELETE',
-        })
-      );
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to delete label ${labelId}`);
+        }
+        return response.json();
+      });
 
-      const results = await Promise.allSettled(deletePromises);
-      const successful = results.filter(result => result.status === 'fulfilled' && result.value.ok).length;
+      await Promise.all(deletePromises);
       
-      if (successful > 0) {
-        // Remove deleted labels from local state
-        setLabels(prevLabels => prevLabels.filter(label => !selectedLabels.has(label.labelId!)));
-        clearSelection();
-        alert(`${successful} label(s) deletada(s) com sucesso!`);
-      } else {
-        alert('Erro ao deletar labels. Tente novamente.');
-      }
+      // Update state by removing deleted labels
+      setLabels(prevLabels => prevLabels.filter(label => !selectedLabels.has(label.labelId!)));
+      clearSelection();
+      
+      alert(`${selectedLabels.size} label(s) deletada(s) com sucesso!`);
     } catch (error) {
       console.error('Error deleting labels:', error);
       alert('Erro ao deletar labels. Tente novamente.');
@@ -253,30 +253,40 @@ export default function HomePage() {
     }
   };
 
-  // Load existing labels from API
+  // Load existing labels from DynamoDB
   const loadExistingLabels = async () => {
     try {
       setIsRefreshing(true);
-      console.log('Refreshing labels...');
-      const response = await fetch('https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/labels');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Labels refreshed:', data);
-        if (data.success && data.data) {
-          // Sort labels by creation date (newest first)
-          const sortedLabels = data.data.sort((a: any, b: any) => {
-            const dateA = new Date(a.createdAt || 0);
-            const dateB = new Date(b.createdAt || 0);
-            return dateB.getTime() - dateA.getTime();
-          });
-          setLabels(sortedLabels);
-          console.log('Labels updated in state:', sortedLabels.length, 'labels');
-        }
+      console.log('Loading labels from DynamoDB...');
+      
+      const response = await fetch('https://2b5m23neo4.execute-api.us-east-1.amazonaws.com/Prod/api/labels');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const result = await response.json();
+      if (result.success && result.data) {
+        setLabels(result.data);
+        console.log('Labels loaded from DynamoDB:', result.data.length, 'labels');
       } else {
-        console.error('Failed to fetch labels:', response.status, response.statusText);
+        setLabels([]);
+        console.log('No labels found in DynamoDB');
       }
     } catch (error) {
-      console.error('Error loading labels:', error);
+      console.error('Error loading labels from DynamoDB:', error);
+      // Fallback to localStorage if API fails
+      try {
+        const savedLabels = localStorage.getItem('smartlabel-labels');
+        if (savedLabels) {
+          const parsedLabels = JSON.parse(savedLabels);
+          setLabels(parsedLabels);
+          console.log('Fell back to localStorage labels');
+        } else {
+          setLabels([]);
+        }
+      } catch (localError) {
+        console.error('Error loading from localStorage fallback:', localError);
+        setLabels([]);
+      }
     } finally {
       setIsRefreshing(false);
     }
@@ -291,19 +301,20 @@ export default function HomePage() {
       console.log('Nutrition data being sent:', data.nutrition);
       
       const payload = {
-        productName: data.name, // Corrigido: usar 'name' do formulário
-        ingredients: data.ingredients,
-        nutrition: data.nutrition, // Corrigido: usar 'nutrition' em vez de 'nutritionalInfo'
-        market: data.market,
-        certifications: data.certifications || [],
-        allergens: data.allergens || [],
-        description: data.description || ''
+        name: data.name,
+        serving_size: data.nutrition?.energy?.per100g ? `${data.nutrition.energy.per100g.value}${data.nutrition.energy.per100g.unit}` : '1 serving',
+        servings_per_container: '1',
+        calories: data.nutrition?.energy?.per100g?.value?.toString() || '0',
+        total_fat: data.nutrition?.fat?.per100g?.value?.toString() || '0',
+        protein: data.nutrition?.protein?.per100g?.value?.toString() || '0',
+        ingredients: Array.isArray(data.ingredients) ? data.ingredients.join(', ') : data.ingredients || '',
+        market: data.market || 'spain'
       };
       
       console.log('Full payload being sent to API:', payload);
       
       // Call the actual API to generate the label
-      const response = await fetch('https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/generate', {
+      const response = await fetch('https://2b5m23neo4.execute-api.us-east-1.amazonaws.com/Prod/api/labels/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -318,8 +329,13 @@ export default function HomePage() {
       const result = await response.json();
       console.log('Label generated successfully:', result);
       
-      // Reload labels to show the new one
-      await loadExistingLabels();
+      // The label is automatically saved to DynamoDB by the backend
+      if (result.success && result.data) {
+        console.log('Label generated and saved to DynamoDB:', result.data);
+        
+        // Refresh the labels list to show the new label
+        await loadExistingLabels();
+      }
       
       // Move to the labels step to show all labels including the new one
       setCurrentStep('labels');
@@ -437,17 +453,19 @@ export default function HomePage() {
     }
 
     try {
-      const response = await fetch(`https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/labels/${labelId}`, {
+      // Delete label from DynamoDB
+      const response = await fetch(`https://2b5m23neo4.execute-api.us-east-1.amazonaws.com/Prod/api/labels/${labelId}`, {
         method: 'DELETE',
       });
-
-      if (response.ok) {
-        // Remove the label from the local state
-        setLabels(prevLabels => prevLabels.filter(label => label.labelId !== labelId));
-        alert('Label deletada com sucesso!');
-      } else {
-        throw new Error('Erro ao deletar label');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete label ${labelId}`);
       }
+      
+      // Update state by removing the deleted label
+      setLabels(prevLabels => prevLabels.filter(label => label.labelId !== labelId));
+      
+      alert('Label deletada com sucesso!');
     } catch (error) {
       console.error('Error deleting label:', error);
       alert('Erro ao deletar label. Tente novamente.');
@@ -646,9 +664,6 @@ export default function HomePage() {
               </a>
             </div>
             <div className="flex items-center gap-6 max-md:hidden">
-              <Link href="/nutrition-label" className="text-sm/6 text-gray-950 dark:text-white hover:text-sky-600 dark:hover:text-sky-300">
-                Nutrition Labels
-              </Link>
               <button
                 type="button"
                 onClick={() => setShowCrisis(true)}

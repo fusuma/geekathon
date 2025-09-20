@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // API Configuration - use local API in development
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
-const AWS_API_URL = 'https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod';
+const AWS_API_URL = 'https://2b5m23neo4.execute-api.us-east-1.amazonaws.com/Prod';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

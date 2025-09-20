@@ -2,7 +2,7 @@
 // This will use the Amplify API endpoint when deployed
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://jsonplaceholder.typicode.com' // Using a public API for demo
+  ? 'https://2b5m23neo4.execute-api.us-east-1.amazonaws.com/Prod' // AWS Lambda API Gateway
   : 'http://localhost:3001'; // Local development
 
 export interface ProductData {
@@ -100,7 +100,18 @@ class ApiService {
     productData: ProductData,
     market: string = 'spain'
   ): Promise<ApiResponse<NutritionLabelData>> {
-    // For now, return mock data that works
+    // Use real API in production, mock data in development
+    if (process.env.NODE_ENV === 'production') {
+      return this.request<NutritionLabelData>('/api/labels/generate', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...productData,
+          market
+        }),
+      });
+    }
+
+    // Mock data for development
     const mockLabelData: NutritionLabelData = {
       nutrition_facts: {
         serving_size: productData.serving_size,

@@ -115,7 +115,11 @@ const nextConfig = {
   },
 
   // Output configuration for static export optimization
-  // output: 'standalone', // Disabled for Amplify compatibility
+  output: 'export', // Static export for Lambda deployment
+  trailingSlash: true,
+  images: {
+    unoptimized: true, // Required for static export
+  },
 
   // Enable runtime configuration
   publicRuntimeConfig: {
