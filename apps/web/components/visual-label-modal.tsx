@@ -21,13 +21,42 @@ export function VisualLabelModal({ isOpen, onClose, labelData }: VisualLabelModa
   const nutritionData = legalLabel?.nutrition as Record<string, unknown> || {};
   const energyData = nutritionData.energy as Record<string, unknown>;
   
+  // Try to get data from backend structure first (flat), then fall back to nested structure
   const productName = (labelDataTyped.productName as string) || (labelDataNested?.productName as string) || 'Product Name';
   const servingSize = (labelDataTyped.servingSize as string) || (labelDataNested?.servingSize as string) || '1 serving';
   const servingsPerContainer = (labelDataTyped.servingsPerContainer as string) || (labelDataNested?.servingsPerContainer as string) || '1';
-  const calories = (energyData?.per100g as Record<string, unknown>)?.value ? `${(energyData.per100g as Record<string, unknown>).value} ${(energyData.per100g as Record<string, unknown>).unit || 'kcal'}` : '0 kcal';
   
-  const nutritionalValues = nutritionData;
-  const ingredients = legalLabel?.ingredients as string || 'Ingredients not specified';
+  // Handle calories - try backend structure first, then nested structure
+  let calories = '0 kcal';
+  if (labelDataTyped.calories) {
+    calories = `${labelDataTyped.calories} kcal`;
+  } else if (energyData?.per100g) {
+    const per100g = energyData.per100g as Record<string, unknown>;
+    calories = `${per100g.value || 0} ${per100g.unit || 'kcal'}`;
+  }
+  
+  // Handle nutritional values - try backend structure first, then nested structure
+  let nutritionalValues: Record<string, unknown> = {};
+  if (labelDataTyped.nutrition_facts) {
+    const nutritionFacts = labelDataTyped.nutrition_facts as Record<string, unknown>;
+    if (nutritionFacts.nutrients && Array.isArray(nutritionFacts.nutrients)) {
+      // Convert backend nutrients array to object format
+      nutritionalValues = {};
+      (nutritionFacts.nutrients as Array<{name: string, amount: string, unit: string}>).forEach(nutrient => {
+        nutritionalValues[nutrient.name] = {
+          per100g: {
+            value: parseFloat(nutrient.amount) || 0,
+            unit: nutrient.unit
+          }
+        };
+      });
+    }
+  } else {
+    nutritionalValues = nutritionData;
+  }
+  
+  // Handle ingredients - try backend structure first, then nested structure
+  const ingredients = (labelDataTyped.ingredients as string) || (legalLabel?.ingredients as string) || 'Ingredients not specified';
   const market = (labelDataTyped.market as string) || 'spain';
   const certifications = (labelDataTyped.marketSpecificData as Record<string, unknown>)?.certifications as string[] || [];
 
@@ -54,43 +83,126 @@ export function VisualLabelModal({ isOpen, onClose, labelData }: VisualLabelModa
     
     try {
       if (exportFormat === 'png') {
-        // Gerar PNG via Python service
-        const response = await fetch('http://localhost:5002/generate-label', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            product_data: {
-              product_name: productName,
-              serving_size: servingSize,
-              servings_per_container: servingsPerContainer,
-              calories: (energyData?.per100g as Record<string, unknown>)?.value || 0,
-              nutritional_values: nutritionalValues,
-              ingredients_list: ingredients,
-              market: market,
-              certifications: certifications
+        // Gerar PNG usando canvas local
+        const canvas = document.createElement('canvas');
+        canvas.width = 400;
+        canvas.height = 600;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          throw new Error('Canvas not supported');
+        }
+
+        // Background branco
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Borda preta
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+        let y = 40;
+
+        // Título
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Nutrition Facts', canvas.width / 2, y);
+        y += 30;
+
+        // Nome do produto
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(productName || 'Product', 20, y);
+        y += 30;
+
+        // Serving size
+        ctx.font = '14px Arial';
+        ctx.fillText(`Serving size: ${servingSize}`, 20, y);
+        y += 20;
+
+        // Servings per container
+        ctx.fillText(`Servings per container: ${servingsPerContainer}`, 20, y);
+        y += 30;
+
+        // Linha separadora
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(20, y);
+        ctx.lineTo(canvas.width - 20, y);
+        ctx.stroke();
+        y += 20;
+
+        // Calories
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText('Calories', 20, y);
+        ctx.textAlign = 'right';
+        ctx.fillText(calories || '0', canvas.width - 20, y);
+        y += 25;
+
+        // Linha separadora
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(20, y);
+        ctx.lineTo(canvas.width - 20, y);
+        ctx.stroke();
+        y += 20;
+
+        // Nutritional values
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'left';
+        
+        if (nutritionalValues) {
+          Object.entries(nutritionalValues).forEach(([key, value]) => {
+            if (value && typeof value === 'object' && 'per100g' in value) {
+              const val = (value as any).per100g;
+              if (val && val.value !== undefined) {
+                ctx.fillText(key, 20, y);
+                ctx.textAlign = 'right';
+                ctx.fillText(`${val.value}${val.unit || ''}`, canvas.width - 20, y);
+                ctx.textAlign = 'left';
+                y += 18;
+              }
             }
-          })
+          });
+        }
+
+        // Ingredients
+        y += 20;
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText('Ingredients:', 20, y);
+        y += 20;
+        ctx.font = '10px Arial';
+        
+        const ingredientsText = Array.isArray(ingredients) ? ingredients.join(', ') : ingredients || 'Not specified';
+        const words = ingredientsText.split(' ');
+        let line = '';
+        
+        words.forEach(word => {
+          const testLine = line + word + ' ';
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width > canvas.width - 40 && line !== '') {
+            ctx.fillText(line, 20, y);
+            line = word + ' ';
+            y += 12;
+          } else {
+            line = testLine;
+          }
         });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        if (line) {
+          ctx.fillText(line, 20, y);
         }
 
-        const result = await response.json();
-
-        if (result.success && result.image_base64) {
-          // Download da imagem
-          const link = document.createElement('a');
-          link.href = `data:image/png;base64,${result.image_base64}`;
-          link.download = `nutrition-label-${productName}-${new Date().toISOString().split('T')[0]}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        } else {
-          throw new Error('No image data received');
-        }
+        // Download da imagem
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `nutrition-label-${productName}-${new Date().toISOString().split('T')[0]}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } else if (exportFormat === 'json') {
         // Gerar JSON
         const dataStr = JSON.stringify(labelData, null, 2);

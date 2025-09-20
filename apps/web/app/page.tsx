@@ -17,6 +17,25 @@ interface Label {
   market?: string;
   language?: string;
   createdAt?: string;
+  updatedAt?: string;
+  servingSize?: string;
+  servingsPerContainer?: string;
+  calories?: string;
+  ingredients?: string;
+  nutrition_facts?: {
+    serving_size?: string;
+    servings_per_container?: string;
+    calories?: string;
+    nutrients?: Array<{
+      name: string;
+      amount: string;
+      unit: string;
+      daily_value: string;
+    }>;
+  };
+  warnings?: string[];
+  ai_generated?: boolean;
+  fallback?: boolean;
   labelData?: {
     legalLabel?: {
       ingredients?: string;
@@ -84,7 +103,7 @@ export default function HomePage() {
   const [showVisualModal, setShowVisualModal] = useState(false);
   const [selectedLabelForVisual, setSelectedLabelForVisual] = useState<Label | null>(null);
 
-  // Load existing labels on mount
+  // Load existing labels from localStorage on mount
   useEffect(() => {
     loadExistingLabels();
   }, []);
@@ -126,23 +145,24 @@ export default function HomePage() {
     }
 
     try {
-      const deletePromises = Array.from(selectedLabels).map(labelId =>
-        fetch(`https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/labels/${labelId}`, {
+      // Delete each selected label from DynamoDB
+      const deletePromises = Array.from(selectedLabels).map(async (labelId) => {
+        const response = await fetch(`https://2b5m23neo4.execute-api.us-east-1.amazonaws.com/Prod/api/labels/${labelId}`, {
           method: 'DELETE',
-        })
-      );
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to delete label ${labelId}`);
+        }
+        return response.json();
+      });
 
-      const results = await Promise.allSettled(deletePromises);
-      const successful = results.filter(result => result.status === 'fulfilled' && result.value.ok).length;
+      await Promise.all(deletePromises);
       
-      if (successful > 0) {
-        // Remove deleted labels from local state
-        setLabels(prevLabels => prevLabels.filter(label => !selectedLabels.has(label.labelId!)));
-        clearSelection();
-        alert(`${successful} label(s) deletada(s) com sucesso!`);
-      } else {
-        alert('Erro ao deletar labels. Tente novamente.');
-      }
+      // Update state by removing deleted labels
+      setLabels(prevLabels => prevLabels.filter(label => !selectedLabels.has(label.labelId!)));
+      clearSelection();
+      
+      alert(`${selectedLabels.size} label(s) deletada(s) com sucesso!`);
     } catch (error) {
       console.error('Error deleting labels:', error);
       alert('Erro ao deletar labels. Tente novamente.');
@@ -252,30 +272,40 @@ export default function HomePage() {
     }
   };
 
-  // Load existing labels from API
+  // Load existing labels from DynamoDB
   const loadExistingLabels = async () => {
     try {
       setIsRefreshing(true);
-      console.log('Refreshing labels...');
-      const response = await fetch('https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/labels');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Labels refreshed:', data);
-        if (data.success && data.data) {
-          // Sort labels by creation date (newest first)
-          const sortedLabels = data.data.sort((a: any, b: any) => {
-            const dateA = new Date(a.createdAt || 0);
-            const dateB = new Date(b.createdAt || 0);
-            return dateB.getTime() - dateA.getTime();
-          });
-          setLabels(sortedLabels);
-          console.log('Labels updated in state:', sortedLabels.length, 'labels');
-        }
+      console.log('Loading labels from DynamoDB...');
+      
+      const response = await fetch('https://2b5m23neo4.execute-api.us-east-1.amazonaws.com/Prod/api/labels');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const result = await response.json();
+      if (result.success && result.data) {
+        setLabels(result.data);
+        console.log('Labels loaded from DynamoDB:', result.data.length, 'labels');
       } else {
-        console.error('Failed to fetch labels:', response.status, response.statusText);
+        setLabels([]);
+        console.log('No labels found in DynamoDB');
       }
     } catch (error) {
-      console.error('Error loading labels:', error);
+      console.error('Error loading labels from DynamoDB:', error);
+      // Fallback to localStorage if API fails
+      try {
+        const savedLabels = localStorage.getItem('smartlabel-labels');
+        if (savedLabels) {
+          const parsedLabels = JSON.parse(savedLabels);
+          setLabels(parsedLabels);
+          console.log('Fell back to localStorage labels');
+        } else {
+          setLabels([]);
+        }
+      } catch (localError) {
+        console.error('Error loading from localStorage fallback:', localError);
+        setLabels([]);
+      }
     } finally {
       setIsRefreshing(false);
     }
@@ -287,22 +317,39 @@ export default function HomePage() {
     
     try {
       // Debug: Log the nutrition data being sent
+      console.log('Form data received:', data);
       console.log('Nutrition data being sent:', data.nutrition);
+      console.log('Ingredients data:', data.ingredients);
+      console.log('Market data:', data.market);
+      
+      // Map market codes to backend expected values
+      const marketMapping: Record<string, string> = {
+        'US': 'usa',
+        'UK': 'uk',
+        'ES': 'spain',
+        'BR': 'brazil',
+        'AO': 'angola',
+        'MO': 'macau',
+        'AE': 'halal'
+      };
+      
+      const mappedMarket = marketMapping[data.market] || 'spain';
       
       const payload = {
-        productName: data.name, // Corrigido: usar 'name' do formulário
-        ingredients: data.ingredients,
-        nutrition: data.nutrition, // Corrigido: usar 'nutrition' em vez de 'nutritionalInfo'
-        market: data.market,
-        certifications: data.certifications || [],
-        allergens: data.allergens || [],
-        description: data.description || ''
+        name: data.name || 'Product',
+        serving_size: data.nutrition?.energy?.per100g ? `${data.nutrition.energy.per100g.value}${data.nutrition.energy.per100g.unit}` : '1 serving',
+        servings_per_container: '1',
+        calories: data.nutrition?.energy?.per100g?.value?.toString() || '0',
+        total_fat: data.nutrition?.fat?.per100g?.value?.toString() || '0',
+        protein: data.nutrition?.protein?.per100g?.value?.toString() || '0',
+        ingredients: Array.isArray(data.ingredients) ? data.ingredients.join(', ') : (data.ingredients || 'Ingredients not specified'),
+        market: mappedMarket
       };
       
       console.log('Full payload being sent to API:', payload);
       
       // Call the actual API to generate the label
-      const response = await fetch('https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/generate', {
+      const response = await fetch('https://2b5m23neo4.execute-api.us-east-1.amazonaws.com/Prod/api/labels/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -317,8 +364,13 @@ export default function HomePage() {
       const result = await response.json();
       console.log('Label generated successfully:', result);
       
-      // Reload labels to show the new one
-      await loadExistingLabels();
+      // The label is automatically saved to DynamoDB by the backend
+      if (result.success && result.data) {
+        console.log('Label generated and saved to DynamoDB:', result.data);
+        
+        // Refresh the labels list to show the new label
+        await loadExistingLabels();
+      }
       
       // Move to the labels step to show all labels including the new one
       setCurrentStep('labels');
@@ -436,17 +488,19 @@ export default function HomePage() {
     }
 
     try {
-      const response = await fetch(`https://zdsrl1mlbg.execute-api.us-east-1.amazonaws.com/Prod/labels/${labelId}`, {
+      // Delete label from DynamoDB
+      const response = await fetch(`https://2b5m23neo4.execute-api.us-east-1.amazonaws.com/Prod/api/labels/${labelId}`, {
         method: 'DELETE',
       });
-
-      if (response.ok) {
-        // Remove the label from the local state
-        setLabels(prevLabels => prevLabels.filter(label => label.labelId !== labelId));
-        alert('Label deletada com sucesso!');
-      } else {
-        throw new Error('Erro ao deletar label');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete label ${labelId}`);
       }
+      
+      // Update state by removing the deleted label
+      setLabels(prevLabels => prevLabels.filter(label => label.labelId !== labelId));
+      
+      alert('Label deletada com sucesso!');
     } catch (error) {
       console.error('Error deleting label:', error);
       alert('Erro ao deletar label. Tente novamente.');
@@ -923,78 +977,39 @@ export default function HomePage() {
                           <div>
                             <h4 className="font-medium text-gray-300 mb-2">Legal Label</h4>
                             <p className="text-gray-400 mb-1">
-                              <strong>Ingredients:</strong> {label.labelData?.legalLabel?.ingredients || 'N/A'}
+                              <strong>Ingredients:</strong> {label.ingredients || 'N/A'}
                             </p>
                             <p className="text-gray-400 mb-1">
-                              <strong>Allergens:</strong> {label.labelData?.legalLabel?.allergens || 'None specified'}
+                              <strong>Allergens:</strong> {label.warnings?.join(', ') || 'None specified'}
                             </p>
                             <div className="text-gray-400">
                               <strong>Nutrition:</strong>
-                              {label.labelData?.legalLabel?.nutrition ? (
-                                typeof label.labelData.legalLabel.nutrition === 'object' ? (
-                                  <div className="ml-2 mt-1 space-y-1">
-                                    {Object.entries(label.labelData.legalLabel.nutrition).map(([key, value]) => {
-                                      // Debug: Log the nutrition data structure
-                                      console.log(`Nutrition display - Key: ${key}, Value:`, value);
-                                      
-                                      // Handle nested nutrition structure (e.g., {per100g: {value: 50, unit: "g"}})
-                                      let displayValue: string = '';
-                                      
-                                      if (typeof value === 'object' && value !== null) {
-                                        const objValue = value as any;
-                                        
-                                        // Check for nested structure like {per100g: {value: 50, unit: "g"}}
-                                        if (objValue.per100g && typeof objValue.per100g === 'object') {
-                                          const per100g = objValue.per100g;
-                                          if (per100g.value !== undefined && per100g.unit !== undefined) {
-                                            displayValue = `${per100g.value}${per100g.unit}`;
-                                          } else if (per100g.value !== undefined) {
-                                            displayValue = String(per100g.value);
-                                          } else {
-                                            displayValue = JSON.stringify(per100g);
-                                          }
-                                        }
-                                        // Check for direct value/unit structure
-                                        else if (objValue.value !== undefined && objValue.unit !== undefined) {
-                                          displayValue = `${objValue.value}${objValue.unit}`;
-                                        } else if (objValue.value !== undefined) {
-                                          displayValue = String(objValue.value);
-                                        } else if (objValue.amount !== undefined) {
-                                          displayValue = String(objValue.amount);
-                                        } else if (objValue.text !== undefined) {
-                                          displayValue = objValue.text;
-                                        } else {
-                                          displayValue = JSON.stringify(value);
-                                        }
-                                      } else {
-                                        displayValue = String(value);
-                                      }
-                                      
-                                      return (
-                                        <div key={key} className="text-sm">
-                                          <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span> {displayValue}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                ) : (
-                                  <span className="ml-2">{label.labelData.legalLabel.nutrition}</span>
-                                )
+                              {label.nutrition_facts?.nutrients ? (
+                                <div className="ml-2 mt-1 space-y-1">
+                                  {label.nutrition_facts.nutrients.map((nutrient: any, index: number) => (
+                                    <div key={index} className="text-sm">
+                                      <span className="capitalize">{nutrient.name}:</span> {nutrient.amount} ({nutrient.daily_value})
+                                    </div>
+                                  ))}
+                                </div>
                               ) : (
                                 <span className="ml-2">N/A</span>
                               )}
                             </div>
                           </div>
                           <div>
-                            <h4 className="font-medium text-gray-300 mb-2">Marketing</h4>
+                            <h4 className="font-medium text-gray-300 mb-2">Product Details</h4>
                             <p className="text-gray-400 mb-1">
-                              <strong>Short:</strong> {label.labelData?.marketing?.short || 'N/A'}
+                              <strong>Market:</strong> {label.market || 'N/A'}
                             </p>
                             <p className="text-gray-400 mb-1">
-                              <strong>Long:</strong> {label.labelData?.marketing?.long || 'N/A'}
+                              <strong>Serving Size:</strong> {label.servingSize || 'N/A'}
+                            </p>
+                            <p className="text-gray-400 mb-1">
+                              <strong>Servings Per Container:</strong> {label.servingsPerContainer || 'N/A'}
                             </p>
                             <p className="text-gray-400">
-                              <strong>Claims:</strong> {label.labelData?.marketing?.claims || 'N/A'}
+                              <strong>Calories:</strong> {label.calories || 'N/A'}
                             </p>
                           </div>
                         </div>

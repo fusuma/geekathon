@@ -5,7 +5,6 @@ import { useAppStore } from '@/stores/app-store';
 import { MARKET_CONFIG } from '@/lib/market-config';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -266,54 +265,59 @@ export function AdvancedMarketSelector() {
             return (
               <Card
                 key={marketKey}
-                className={`cursor-pointer transition-all duration-200 rounded-xl border-2 bg-gray-800/50 shadow-sm ${
+                className={`group cursor-pointer transition-all duration-300 rounded-2xl border-2 bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-sm shadow-lg hover:shadow-xl ${
                   isSelected
-                    ? 'border-blue-500 bg-blue-900/20 shadow-blue-500/20'
-                    : 'border-gray-600 hover:border-gray-500 hover:shadow-md'
+                    ? 'border-blue-500 bg-gradient-to-br from-blue-900/30 to-blue-800/20 shadow-blue-500/25 transform scale-105'
+                    : 'border-gray-600/50 hover:border-gray-400 hover:bg-gradient-to-br hover:from-gray-700/60 hover:to-gray-800/60'
                 } ${isPrimary ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-900' : ''}`}
               >
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={(checked) => {
-                          handleMarketChange(marketKey as Market, checked as boolean);
-                        }}
-                        className="mt-1"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <div className="flex-1">
-                        <CardTitle className="text-lg font-semibold tracking-tight text-gray-100">
-                          {marketInfo.label}
-                        </CardTitle>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs font-semibold px-2.5 py-0.5 border-gray-500 text-gray-300"
-                          >
-                            {marketInfo.language}
-                          </Badge>
-                          <Badge 
-                            variant="secondary" 
-                            className="text-xs font-semibold px-2.5 py-0.5 bg-gray-700 text-gray-200 border-transparent"
-                          >
-                            {rules.length} rules
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleMarketExpansion(marketKey);
-                      }}
-                      className="p-1 h-8 w-8 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-colors"
+                <CardHeader 
+                  className="pb-6 pt-6 px-6 cursor-pointer text-center"
+                  onClick={() => {
+                    if (isSelected) {
+                      // If clicking on a selected card, deselect it (but keep primary market if it's not this one)
+                      handleMarketChange(marketKey as Market, false);
+                    } else {
+                      // If clicking on an unselected card, select it
+                      handleMarketChange(marketKey as Market, true);
+                    }
+                  }}
+                >
+                  {/* Market title with selection indicator */}
+                  <CardTitle className="text-xl font-bold tracking-tight text-gray-100 mb-3 flex items-center justify-center gap-2">
+                    {isSelected && (
+                      <CheckCircle className="h-5 w-5 text-blue-400" />
+                    )}
+                    {marketInfo.label}
+                  </CardTitle>
+
+                  {/* Language and rules badges with info button */}
+                  <div className="flex justify-center items-center gap-3 mb-4">
+                    <Badge 
+                      variant="outline" 
+                      className="text-xs font-semibold px-3 py-1 border-gray-500/50 text-gray-300 bg-gray-700/50"
                     >
-                      <Info className="h-4 w-4" />
-                    </Button>
+                      {marketInfo.language}
+                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge 
+                        variant="secondary" 
+                        className="text-xs font-semibold px-3 py-1 bg-gray-600/70 text-gray-200 border-transparent"
+                      >
+                        {rules.length} rules
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleMarketExpansion(marketKey);
+                        }}
+                        className="p-1 h-6 w-6 hover:bg-gray-600/50 text-gray-400 hover:text-white rounded-full transition-all duration-200 hover:scale-110"
+                      >
+                        <Info className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
 
@@ -363,26 +367,13 @@ export function AdvancedMarketSelector() {
                   </CardContent>
                 )}
 
-                {isSelected && (
-                  <CardContent className="pt-0 pb-4">
-                    <div className="flex items-center space-x-2 p-2 rounded-lg bg-gray-700/30 border border-gray-600">
-                      <input
-                        type="radio"
-                        id={`primary-market-${marketKey}`}
-                        name="primary-market"
-                        value={marketKey}
-                        checked={isPrimary}
-                        onChange={() => handlePrimaryMarketChange(marketKey as Market)}
-                        className="form-radio h-4 w-4 text-blue-500 border-gray-400 focus:ring-blue-500 transition duration-150 ease-in-out"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <Label
-                        htmlFor={`primary-market-${marketKey}`}
-                        className="text-xs text-gray-300 cursor-pointer font-medium"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Set as Primary Market
-                      </Label>
+                {isSelected && isPrimary && (
+                  <CardContent className="pt-0 pb-6 px-6">
+                    <div className="flex items-center justify-center p-3 rounded-xl bg-blue-600/20 border border-blue-500/50">
+                      <span className="text-sm font-semibold text-blue-200 flex items-center gap-2">
+                        <span className="text-yellow-300">★</span>
+                        Primary Market
+                      </span>
                     </div>
                   </CardContent>
                 )}
@@ -393,12 +384,12 @@ export function AdvancedMarketSelector() {
 
         {/* Selected Markets Summary */}
         {selectedMarkets.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-100 mb-3 flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+          <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-gray-700/50 backdrop-blur-sm">
+            <h3 className="text-xl font-bold text-gray-100 mb-4 flex items-center justify-center gap-3">
+              <CheckCircle className="h-6 w-6 text-green-400" />
               Selected Markets ({selectedMarkets.length})
             </h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-center gap-3">
               {selectedMarkets.map((market) => {
                 const marketInfo = MARKET_CONFIG[market as keyof typeof MARKET_CONFIG];
                 const isPrimary = primaryMarket === market;
@@ -406,14 +397,14 @@ export function AdvancedMarketSelector() {
                   <Badge
                     key={market}
                     variant={isPrimary ? 'default' : 'secondary'}
-                    className={`flex items-center gap-1 ${
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
                       isPrimary
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-600 text-gray-200'
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 transform scale-105'
+                        : 'bg-gradient-to-r from-gray-600 to-gray-700 text-gray-200 hover:from-gray-500 hover:to-gray-600 hover:scale-105'
                     }`}
                   >
+                    {isPrimary && <span className="text-yellow-300">★</span>}
                     {marketInfo?.label || market}
-                    {isPrimary && ' (Primary)'}
                   </Badge>
                 );
               })}
