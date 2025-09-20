@@ -1,9 +1,0 @@
-{
-  "name": "smartlabelapi",
-  "version": "1.0.0",
-  "description": "SmartLabel AI API Lambda function",
-  "main": "index.js",
-  "dependencies": {
-    "aws-sdk": "^2.1691.0"
-  }
-}

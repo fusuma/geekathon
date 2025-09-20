@@ -115,7 +115,7 @@ const nextConfig = {
   },
 
   // Output configuration for static export optimization
-  output: 'standalone',
+  // output: 'standalone', // Disabled for Amplify compatibility
 
   // Enable runtime configuration
   publicRuntimeConfig: {
