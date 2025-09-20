@@ -1,4 +1,13 @@
 version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - echo "Building backend API..."
+        - cd apps/api
+        - npm install
+        - npm run build
+        - echo "Backend build completed"
 frontend:
   phases:
     preBuild:
