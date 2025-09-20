@@ -17,6 +17,25 @@ interface Label {
   market?: string;
   language?: string;
   createdAt?: string;
+  updatedAt?: string;
+  servingSize?: string;
+  servingsPerContainer?: string;
+  calories?: string;
+  ingredients?: string;
+  nutrition_facts?: {
+    serving_size?: string;
+    servings_per_container?: string;
+    calories?: string;
+    nutrients?: Array<{
+      name: string;
+      amount: string;
+      unit: string;
+      daily_value: string;
+    }>;
+  };
+  warnings?: string[];
+  ai_generated?: boolean;
+  fallback?: boolean;
   labelData?: {
     legalLabel?: {
       ingredients?: string;
@@ -298,17 +317,33 @@ export default function HomePage() {
     
     try {
       // Debug: Log the nutrition data being sent
+      console.log('Form data received:', data);
       console.log('Nutrition data being sent:', data.nutrition);
+      console.log('Ingredients data:', data.ingredients);
+      console.log('Market data:', data.market);
+      
+      // Map market codes to backend expected values
+      const marketMapping: Record<string, string> = {
+        'US': 'usa',
+        'UK': 'uk',
+        'ES': 'spain',
+        'BR': 'brazil',
+        'AO': 'angola',
+        'MO': 'macau',
+        'AE': 'halal'
+      };
+      
+      const mappedMarket = marketMapping[data.market] || 'spain';
       
       const payload = {
-        name: data.name,
+        name: data.name || 'Product',
         serving_size: data.nutrition?.energy?.per100g ? `${data.nutrition.energy.per100g.value}${data.nutrition.energy.per100g.unit}` : '1 serving',
         servings_per_container: '1',
         calories: data.nutrition?.energy?.per100g?.value?.toString() || '0',
         total_fat: data.nutrition?.fat?.per100g?.value?.toString() || '0',
         protein: data.nutrition?.protein?.per100g?.value?.toString() || '0',
-        ingredients: Array.isArray(data.ingredients) ? data.ingredients.join(', ') : data.ingredients || '',
-        market: data.market || 'spain'
+        ingredients: Array.isArray(data.ingredients) ? data.ingredients.join(', ') : (data.ingredients || 'Ingredients not specified'),
+        market: mappedMarket
       };
       
       console.log('Full payload being sent to API:', payload);
@@ -942,78 +977,39 @@ export default function HomePage() {
                           <div>
                             <h4 className="font-medium text-gray-300 mb-2">Legal Label</h4>
                             <p className="text-gray-400 mb-1">
-                              <strong>Ingredients:</strong> {label.labelData?.legalLabel?.ingredients || 'N/A'}
+                              <strong>Ingredients:</strong> {label.ingredients || 'N/A'}
                             </p>
                             <p className="text-gray-400 mb-1">
-                              <strong>Allergens:</strong> {label.labelData?.legalLabel?.allergens || 'None specified'}
+                              <strong>Allergens:</strong> {label.warnings?.join(', ') || 'None specified'}
                             </p>
                             <div className="text-gray-400">
                               <strong>Nutrition:</strong>
-                              {label.labelData?.legalLabel?.nutrition ? (
-                                typeof label.labelData.legalLabel.nutrition === 'object' ? (
-                                  <div className="ml-2 mt-1 space-y-1">
-                                    {Object.entries(label.labelData.legalLabel.nutrition).map(([key, value]) => {
-                                      // Debug: Log the nutrition data structure
-                                      console.log(`Nutrition display - Key: ${key}, Value:`, value);
-                                      
-                                      // Handle nested nutrition structure (e.g., {per100g: {value: 50, unit: "g"}})
-                                      let displayValue: string = '';
-                                      
-                                      if (typeof value === 'object' && value !== null) {
-                                        const objValue = value as any;
-                                        
-                                        // Check for nested structure like {per100g: {value: 50, unit: "g"}}
-                                        if (objValue.per100g && typeof objValue.per100g === 'object') {
-                                          const per100g = objValue.per100g;
-                                          if (per100g.value !== undefined && per100g.unit !== undefined) {
-                                            displayValue = `${per100g.value}${per100g.unit}`;
-                                          } else if (per100g.value !== undefined) {
-                                            displayValue = String(per100g.value);
-                                          } else {
-                                            displayValue = JSON.stringify(per100g);
-                                          }
-                                        }
-                                        // Check for direct value/unit structure
-                                        else if (objValue.value !== undefined && objValue.unit !== undefined) {
-                                          displayValue = `${objValue.value}${objValue.unit}`;
-                                        } else if (objValue.value !== undefined) {
-                                          displayValue = String(objValue.value);
-                                        } else if (objValue.amount !== undefined) {
-                                          displayValue = String(objValue.amount);
-                                        } else if (objValue.text !== undefined) {
-                                          displayValue = objValue.text;
-                                        } else {
-                                          displayValue = JSON.stringify(value);
-                                        }
-                                      } else {
-                                        displayValue = String(value);
-                                      }
-                                      
-                                      return (
-                                        <div key={key} className="text-sm">
-                                          <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span> {displayValue}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                ) : (
-                                  <span className="ml-2">{label.labelData.legalLabel.nutrition}</span>
-                                )
+                              {label.nutrition_facts?.nutrients ? (
+                                <div className="ml-2 mt-1 space-y-1">
+                                  {label.nutrition_facts.nutrients.map((nutrient: any, index: number) => (
+                                    <div key={index} className="text-sm">
+                                      <span className="capitalize">{nutrient.name}:</span> {nutrient.amount} ({nutrient.daily_value})
+                                    </div>
+                                  ))}
+                                </div>
                               ) : (
                                 <span className="ml-2">N/A</span>
                               )}
                             </div>
                           </div>
                           <div>
-                            <h4 className="font-medium text-gray-300 mb-2">Marketing</h4>
+                            <h4 className="font-medium text-gray-300 mb-2">Product Details</h4>
                             <p className="text-gray-400 mb-1">
-                              <strong>Short:</strong> {label.labelData?.marketing?.short || 'N/A'}
+                              <strong>Market:</strong> {label.market || 'N/A'}
                             </p>
                             <p className="text-gray-400 mb-1">
-                              <strong>Long:</strong> {label.labelData?.marketing?.long || 'N/A'}
+                              <strong>Serving Size:</strong> {label.servingSize || 'N/A'}
+                            </p>
+                            <p className="text-gray-400 mb-1">
+                              <strong>Servings Per Container:</strong> {label.servingsPerContainer || 'N/A'}
                             </p>
                             <p className="text-gray-400">
-                              <strong>Claims:</strong> {label.labelData?.marketing?.claims || 'N/A'}
+                              <strong>Calories:</strong> {label.calories || 'N/A'}
                             </p>
                           </div>
                         </div>
