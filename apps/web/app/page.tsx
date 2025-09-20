@@ -9,6 +9,7 @@ import { CrisisAnalysisResults } from '@/components/crisis/crisis-analysis-resul
 import { VisualLabelModal } from '@/components/visual-label-modal';
 import AuthGuard from '@/components/AuthGuard';
 import UserHeader from '@/components/UserHeader';
+import Link from 'next/link';
 
 
 interface Label {
@@ -645,6 +646,9 @@ export default function HomePage() {
               </a>
             </div>
             <div className="flex items-center gap-6 max-md:hidden">
+              <Link href="/nutrition-label" className="text-sm/6 text-gray-950 dark:text-white hover:text-sky-600 dark:hover:text-sky-300">
+                Nutrition Labels
+              </Link>
               <button
                 type="button"
                 onClick={() => setShowCrisis(true)}
