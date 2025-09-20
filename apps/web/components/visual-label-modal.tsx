@@ -15,15 +15,21 @@ export function VisualLabelModal({ isOpen, onClose, labelData }: VisualLabelModa
   if (!isOpen) return null;
 
   // Extrair dados do label - adaptado para a estrutura do objeto Label
-  const labelDataTyped = labelData as any; // Type assertion for easier access
-  const productName = (labelDataTyped.productName as string) || (labelDataTyped.labelData?.productName as string) || 'Product Name';
-  const servingSize = (labelDataTyped.servingSize as string) || (labelDataTyped.labelData?.servingSize as string) || '1 serving';
-  const servingsPerContainer = (labelDataTyped.servingsPerContainer as string) || (labelDataTyped.labelData?.servingsPerContainer as string) || '1';
-  const calories = (labelDataTyped.calories as string) || (labelDataTyped.labelData?.calories as string) || '0';
-  const nutritionalValues = (labelDataTyped.nutritionalValues as Record<string, unknown>) || (labelDataTyped.labelData?.nutritionalValues as Record<string, unknown>) || {};
-  const ingredients = (labelDataTyped.ingredients as string) || (labelDataTyped.labelData?.legalLabel?.ingredients as string) || 'Ingredients not specified';
+  const labelDataTyped = labelData as Record<string, unknown>; // Type assertion for easier access
+  const labelDataNested = labelDataTyped.labelData as Record<string, unknown>;
+  const legalLabel = labelDataNested?.legalLabel as Record<string, unknown>;
+  const nutritionData = legalLabel?.nutrition as Record<string, unknown> || {};
+  const energyData = nutritionData.energy as Record<string, unknown>;
+  
+  const productName = (labelDataTyped.productName as string) || (labelDataNested?.productName as string) || 'Product Name';
+  const servingSize = (labelDataTyped.servingSize as string) || (labelDataNested?.servingSize as string) || '1 serving';
+  const servingsPerContainer = (labelDataTyped.servingsPerContainer as string) || (labelDataNested?.servingsPerContainer as string) || '1';
+  const calories = (energyData?.per100g as Record<string, unknown>)?.value ? `${(energyData.per100g as Record<string, unknown>).value} ${(energyData.per100g as Record<string, unknown>).unit || 'kcal'}` : '0 kcal';
+  
+  const nutritionalValues = nutritionData;
+  const ingredients = legalLabel?.ingredients as string || 'Ingredients not specified';
   const market = (labelDataTyped.market as string) || 'spain';
-  const certifications = (labelDataTyped.certifications as string[]) || [];
+  const certifications = (labelDataTyped.marketSpecificData as Record<string, unknown>)?.certifications as string[] || [];
 
   // Função para formatar valores nutricionais
   const formatNutritionValue = (value: unknown) => {
@@ -59,7 +65,7 @@ export function VisualLabelModal({ isOpen, onClose, labelData }: VisualLabelModa
               product_name: productName,
               serving_size: servingSize,
               servings_per_container: servingsPerContainer,
-              calories: calories,
+              calories: (energyData?.per100g as Record<string, unknown>)?.value || 0,
               nutritional_values: nutritionalValues,
               ingredients_list: ingredients,
               market: market,
@@ -253,7 +259,7 @@ export function VisualLabelModal({ isOpen, onClose, labelData }: VisualLabelModa
                         onChange={(e) => setExportFormat(e.target.value as 'pdf' | 'png' | 'json')}
                         className="mr-2"
                       />
-                      <span className="text-white">PNG (with AWS Bedrock)</span>
+                      <span className="text-white">PNG</span>
                     </label>
                     <label className="flex items-center">
                       <input
